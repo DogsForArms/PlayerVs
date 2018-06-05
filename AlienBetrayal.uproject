@@ -1,0 +1,23 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{E97BB720-45F6-83F7-9582-75874419E797}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "AlienBetrayal",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OpenVRExpansionPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "VRExpansionPlugin",
+			"Enabled": true
+		}
+	]
+}
