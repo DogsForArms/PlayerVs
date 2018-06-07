@@ -16,7 +16,6 @@ class ALIENBETRAYAL_API UPlayerWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
-	
 public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "MyEvents")

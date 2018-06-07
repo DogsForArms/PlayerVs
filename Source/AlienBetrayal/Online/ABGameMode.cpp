@@ -10,14 +10,12 @@
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-//	static ConstructorHelpers::FClassFinder<AHUD> PlayerHUDOb(TEXT("/Game/Blueprints/HUD/PlayerHUD"));
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
 	DefaultPawnClass = PlayerPawnOb.Class;
 	PlayerControllerClass = PlayerControllerOb.Class;
 	PlayerStateClass = AABPlayerState::StaticClass();
 	GameStateClass = AABGameState::StaticClass();
-	//HUDClass = PlayerHUDOb.Class;
 
 	bUseSeamlessTravel = true;
 }
@@ -82,7 +80,7 @@ void AABGameMode::HandleMatchHasStarted()
 
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
-	bool bIsReadyToStart = NumPlayers > 1;
+	bool bIsReadyToStart = NumPlayers > 2;
 
 	return bIsReadyToStart;
 }

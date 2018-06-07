@@ -30,7 +30,6 @@ void AABPlayerController::ServerSetTeam(ETeam Value)
 	if (HasAuthority()) 
 	{
 		Team = Value;
-		OnRep_Team();
 	}
 }
 
