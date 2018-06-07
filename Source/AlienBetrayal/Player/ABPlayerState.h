@@ -17,7 +17,7 @@ class ALIENBETRAYAL_API AABPlayerState : public APlayerState
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
-	/** replicate team colors. Updated the players mesh colors appropriately */
+	/** replicate team.  TODO Updated the players hud*/
 	UFUNCTION()
 	void OnRep_Team();
 

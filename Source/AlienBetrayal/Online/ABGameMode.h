@@ -37,5 +37,14 @@ protected:
 	
 	AABGameState* GetABGameState();
 
+	/** 
+		Assign PlayerStates to Alien team, 
+		Alien Count must be <= NumPlayers!
+	*/
+	void AssignAliens(int AlienCount);
 
+	/**
+		PlayerStates that Unassigned will be set to Innocent
+	*/
+	void UnassignedToInnocent();
 };

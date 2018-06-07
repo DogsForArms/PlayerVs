@@ -5,6 +5,7 @@
 UENUM(BlueprintType)
 enum class ETeam : uint8
 {
+	Unassigned		UMETA(DisplayName = "Unassigned"),
 	Alien			UMETA(DisplayName = "Alien"),
 	Innocent		UMETA(DisplayName = "Innocent")
 };
