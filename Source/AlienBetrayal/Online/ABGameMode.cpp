@@ -96,10 +96,10 @@ void AABGameMode::AssignAliens(int AlienCount)
 	while (AlienCount > 0)
 	{
 		int AlienIndex = FMath::RandRange(0, NumPlayers - 1);
-		auto PS = Cast<AABPlayerState>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex)->PlayerState);
+		auto PS = Cast<AABPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex));
 		if (PS->GetTeam() != ETeam::Alien)
 		{
-			PS->SetTeam(ETeam::Alien);
+			PS->ServerSetTeam(ETeam::Alien);
 			AlienCount--;
 		}
 	}
@@ -109,10 +109,10 @@ void AABGameMode::UnassignedToInnocent()
 {
 	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		auto PS = Cast<AABPlayerState>((*It)->PlayerState);
+		auto PS = Cast<AABPlayerController>((*It));
 		if (PS->GetTeam() == ETeam::Unassigned)
 		{
-			PS->SetTeam(ETeam::Innocent);
+			PS->ServerSetTeam(ETeam::Innocent);
 		}
 	}
 }

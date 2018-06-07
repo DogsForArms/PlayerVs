@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "VRPlayerController.h"
+#include "Types.h"
 #include "ABPlayerController.generated.h"
 
 /**
@@ -14,11 +15,22 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 {
 	GENERATED_BODY()
 
+	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
+
+	/** replicate team.  TODO Updated the players hud*/
+	UFUNCTION()
+	void OnRep_Team();
+
 public: 
 	AABPlayerController();
 
+	void ServerSetTeam(ETeam Value);
+	ETeam GetTeam();
+
 protected:
-	virtual void BeginPlay() override;
-	virtual void SetupInputComponent() override;
 	
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_Team)
+	ETeam Team;
 };
