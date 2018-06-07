@@ -26,7 +26,14 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 public: 
 	AABPlayerController();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UPlayerWidget> PlayerWidgetTemplate;
+
+	class UPlayerWidget* PlayerWidget;
+
 	void ServerSetTeam(ETeam Value);
+
+	UFUNCTION(BlueprintPure, Category = "Team")
 	ETeam GetTeam();
 
 protected:

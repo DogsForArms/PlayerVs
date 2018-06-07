@@ -3,6 +3,8 @@
 #include "ABPlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/PlayerWidget.h"
 
 AABPlayerController::AABPlayerController()
 {
@@ -17,16 +19,10 @@ void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void AABPlayerController::OnRep_Team()
 {
-	if (Team == ETeam::Alien)
+	if (PlayerWidget)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("You're an Alien"));
+		PlayerWidget->OnChangeTeam(Team);
 	}
-	else
-	if (Team == ETeam::Innocent)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("You're an Innocent"));
-	}
-	
 }
 
 void AABPlayerController::ServerSetTeam(ETeam Value)
@@ -34,6 +30,7 @@ void AABPlayerController::ServerSetTeam(ETeam Value)
 	if (HasAuthority()) 
 	{
 		Team = Value;
+		OnRep_Team();
 	}
 }
 
@@ -44,7 +41,14 @@ ETeam AABPlayerController::GetTeam()
 
 void AABPlayerController::BeginPlay()
 {
-
+	if (PlayerWidgetTemplate)
+	{
+		PlayerWidget = CreateWidget<UPlayerWidget>(this, PlayerWidgetTemplate);
+		if (PlayerWidget)
+		{
+			PlayerWidget->AddToViewport();
+		}
+	}
 }
 
 void AABPlayerController::SetupInputComponent()

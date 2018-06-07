@@ -5,15 +5,19 @@
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
 #include "Online/ABGameState.h"
+#include "GameFramework/HUD.h"
 //#include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+//	static ConstructorHelpers::FClassFinder<AHUD> PlayerHUDOb(TEXT("/Game/Blueprints/HUD/PlayerHUD"));
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
 	DefaultPawnClass = PlayerPawnOb.Class;
-	PlayerControllerClass = AABPlayerController::StaticClass();
+	PlayerControllerClass = PlayerControllerOb.Class;
 	PlayerStateClass = AABPlayerState::StaticClass();
 	GameStateClass = AABGameState::StaticClass();
+	//HUDClass = PlayerHUDOb.Class;
 
 	bUseSeamlessTravel = true;
 }
@@ -70,6 +74,9 @@ void AABGameMode::HandleMatchHasStarted()
 
 	AssignAliens(FMath::Max(1, NumPlayers / 3));
 	UnassignedToInnocent();
+	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It) {
+		auto PS = Cast<AABPlayerController>((*It));
+	}
 
 }
 
