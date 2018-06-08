@@ -29,6 +29,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UPlayerWidget> PlayerWidgetTemplate;
 
+	UPROPERTY()
 	class UPlayerWidget* PlayerWidget;
 
 	void ServerSetTeam(ETeam Value);

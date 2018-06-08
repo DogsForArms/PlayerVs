@@ -72,9 +72,6 @@ void AABGameMode::HandleMatchHasStarted()
 
 	AssignAliens(FMath::Max(1, NumPlayers / 3));
 	UnassignedToInnocent();
-	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It) {
-		auto PS = Cast<AABPlayerController>((*It));
-	}
 
 }
 

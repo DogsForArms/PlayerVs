@@ -41,12 +41,15 @@ ETeam AABPlayerController::GetTeam()
 void AABPlayerController::BeginPlay()
 {
 	if (PlayerWidgetTemplate)
+	if (PlayerWidgetTemplate && IsLocalPlayerController())
 	{
 		PlayerWidget = CreateWidget<UPlayerWidget>(this, PlayerWidgetTemplate);
 		if (PlayerWidget)
 		{
 			PlayerWidget->AddToViewport();
 		}
+		//Widget can be created after OnRep_Team event, then your team will not be displayed. :[
+		OnRep_Team();
 	}
 }
 
