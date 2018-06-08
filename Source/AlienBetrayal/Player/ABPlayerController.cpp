@@ -40,7 +40,6 @@ ETeam AABPlayerController::GetTeam()
 
 void AABPlayerController::BeginPlay()
 {
-	if (PlayerWidgetTemplate)
 	if (PlayerWidgetTemplate && IsLocalPlayerController())
 	{
 		PlayerWidget = CreateWidget<UPlayerWidget>(this, PlayerWidgetTemplate);
