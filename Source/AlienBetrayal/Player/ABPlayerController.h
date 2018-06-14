@@ -26,11 +26,26 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 public: 
 	AABPlayerController();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UFUNCTION(Reliable, Client)
+	void InitiatePlay();
+	void InitiatePlay_Implementation();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void InitiatePlayHelperServer(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+	void InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+	bool InitiatePlayHelperServer_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Initialization")
 	TSubclassOf<class UPlayerWidget> PlayerWidgetTemplate;
 
 	UPROPERTY()
 	class UPlayerWidget* PlayerWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Initialization")
+	TSubclassOf<class AABCharacter> FPSCharacterTemplate;
+
+	UPROPERTY(EditAnywhere, Category = "Initialization")
+	TSubclassOf<class AABCharacter> VRCharacterTemplate;
 
 	void ServerSetTeam(ETeam Value);
 

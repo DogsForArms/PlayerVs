@@ -10,9 +10,9 @@
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
+	//static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
-	DefaultPawnClass = PlayerPawnOb.Class;
+	//DefaultPawnClass = PlayerPawnOb.Class;
 	PlayerControllerClass = PlayerControllerOb.Class;
 	PlayerStateClass = AABPlayerState::StaticClass();
 	GameStateClass = AABGameState::StaticClass();
@@ -52,7 +52,8 @@ void AABGameMode::PostLogin(APlayerController * NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	//AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
+	AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
+	NewPC->InitiatePlay();
 	//if (NewPC && NewPC->GetPawn() == NULL)
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("NewPlayer joined and no pawn."))

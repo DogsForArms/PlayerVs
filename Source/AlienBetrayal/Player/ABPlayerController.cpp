@@ -5,10 +5,61 @@
 #include "Engine.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/PlayerWidget.h"
+#include "ABCharacter.h"
 
 AABPlayerController::AABPlayerController()
 {
 
+}
+
+void AABPlayerController::InitiatePlay_Implementation()
+{
+	bool HMDEnabled = UVRExpansionFunctionLibrary::GetIsHMDConnected() && UVRExpansionFunctionLibrary::IsInVREditorPreviewOrGame();
+	FVector HMDOffset;
+	FRotator HMDOrientation;
+	//https://answers.unrealengine.com/questions/207990/link-error-unresolved-getpositionaltrackingcamerap.html
+	//UHeadMountedDisplayFunctionLibrary::GetOrientationAndPosition(HMDOrientation, HMDOffset);
+	
+	InitiatePlayHelperServer(HMDEnabled, HMDOffset, HMDOrientation);
+}
+
+void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	FTransform SpawnTransform;
+
+	TSubclassOf<APlayerStart> classToFind;
+	TArray<AActor*> Spawns;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, Spawns);
+	if (!Spawns.Num()) {
+		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
+	} else {
+		int PlayerStartIndex = FMath::FRandRange(0, Spawns.Num() - 1);
+		AActor *Spawn = Spawns[PlayerStartIndex];
+		SpawnTransform = Spawn->GetActorTransform();
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	AABCharacter *Character;
+	if (!HMDEnabled && FPSCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnInfo);
+	}
+	else if (VRCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnInfo);
+	} 
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FPS or VR Character templates are not set properly."))
+		return;
+	}
+
+	Possess(Character);
+}
+
+bool AABPlayerController::InitiatePlayHelperServer_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	return true;
 }
 
 void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
