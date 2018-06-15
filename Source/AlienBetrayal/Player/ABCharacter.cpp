@@ -15,8 +15,6 @@ void AABCharacter::InitializeHands(class UStaticMeshComponent* Left, class UStat
 void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("Forward", this, &AABCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("Right", this, &AABCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("ForwardRH", this, &AABCharacter::MoveForwardRH);
 	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRightRH);
 	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveForwardLH);
@@ -33,16 +31,6 @@ void AABCharacter::GrabLeft()
 void AABCharacter::GrabRight()
 {
 	UE_LOG(LogTemp, Warning, TEXT("GrabRight"))
-}
-
-void AABCharacter::MoveForward(float Value)
-{
-
-}
-
-void AABCharacter::MoveRight(float Value)
-{
-
 }
 
 void AABCharacter::MoveForwardRH(float Value)
@@ -66,6 +54,11 @@ void AABCharacter::MoveRightLH(float Value)
 
 void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UStaticMeshComponent* Hand)
 {
+	bool HMDEnabled = UVRExpansionFunctionLibrary::GetIsHMDConnected() && UVRExpansionFunctionLibrary::IsInVREditorPreviewOrGame();
+
+	if (!HMDEnabled) {
+		return;
+	}
 	FVector Up = FVector(0, 0, 1.f);
 	FVector Forward = FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal();
 	FVector Right = FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal();

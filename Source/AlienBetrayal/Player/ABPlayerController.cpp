@@ -27,9 +27,8 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 {
 	FTransform SpawnTransform;
 
-	TSubclassOf<APlayerStart> classToFind;
 	TArray<AActor*> Spawns;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, Spawns);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);
 	if (!Spawns.Num()) {
 		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
 	} else {
@@ -43,10 +42,12 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 	if (!HMDEnabled && FPSCharacterTemplate)
 	{
 		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn FPSCharacterTemplate"))
 	}
 	else if (VRCharacterTemplate)
 	{
 		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn VRCharacterTemplate"))
 	} 
 	else
 	{

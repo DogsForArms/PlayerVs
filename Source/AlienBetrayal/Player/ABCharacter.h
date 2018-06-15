@@ -27,8 +27,6 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 public:
 	void GrabLeft();
 	void GrabRight();
-	void MoveForward(float Value);
-	void MoveRight(float Value);
 	void MoveForwardRH(float Value);
 	void MoveRightRH(float Value);
 	void MoveForwardLH(float Value);
