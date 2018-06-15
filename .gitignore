@@ -72,9 +72,14 @@ Saved/*
 
 # Compiled source files for the engine to use
 Intermediate/*
+
+
+Plugins/VRExpansionPlugin/VRExpansionPlugin/Intermediate/*
+Plugins/VRExpansionPlugin/OpenVRExpansionPlugin/Intermediate/*
 Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
 
 enc_temp_folder/*
+
