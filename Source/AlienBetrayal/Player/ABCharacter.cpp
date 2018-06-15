@@ -3,16 +3,10 @@
 #include "ABCharacter.h"
 #include "components/StaticMeshComponent.h"
 
-void AABCharacter::PostInitializeComponents()
+void AABCharacter::InitializeHands(class UStaticMeshComponent* Left, class UStaticMeshComponent* Right)
 {
-	TSubclassOf<UStaticMeshComponent> MeshType;
-	auto Any = GetComponentsByClass(MeshType);
-	auto Left = GetComponentsByTag(MeshType, FName("Left"));
-	auto Right = GetComponentsByTag(MeshType, FName("Right"));
-	if (Left.Num() && Right.Num()) {
-		LeftHand = Cast<UStaticMeshComponent>(Left[0]);
-		RightHand = Cast<UStaticMeshComponent>(Right[0]);
-	}
+	LeftHand = Left;
+	RightHand = Right;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,20 +47,35 @@ void AABCharacter::MoveRight(float Value)
 
 void AABCharacter::MoveForwardRH(float Value)
 {
-
+	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
+	AddDpadMovementInput(FVector2D(0, Value), RightHand);
 }
 
 void AABCharacter::MoveRightRH(float Value)
 {
-
+	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
+	AddDpadMovementInput(FVector2D(Value, 0), RightHand);
 }
 void AABCharacter::MoveForwardLH(float Value)
 {
-
+	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
+	AddDpadMovementInput(FVector2D(0, Value), LeftHand);
 }
 
 void AABCharacter::MoveRightLH(float Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("MoveRightLH %d"), Value)
+	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
+	AddDpadMovementInput(FVector2D(Value, 0), LeftHand);
+}
 
+void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UStaticMeshComponent* Hand)
+{
+	FVector Up = FVector(0, 0, 1.f);
+	FVector Forward = FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal();
+	FVector Right = FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal();
+	FVector Direction = (Forward * DPadDirection.Y + Right * DPadDirection.X).GetSafeNormal();
+
+	GetMovementComponent()->AddInputVector(Direction, false);
 }
 

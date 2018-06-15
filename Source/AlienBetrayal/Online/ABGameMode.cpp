@@ -85,7 +85,7 @@ bool AABGameMode::ReadyToStartMatch_Implementation()
 
 void AABGameMode::DefaultTimer()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Has match started %s"), *GetABGameState()->GetMatchState().ToString());
+//	UE_LOG(LogTemp, Warning, TEXT("Has match started %s"), *GetABGameState()->GetMatchState().ToString());
 }
 
 AABGameState* AABGameMode::GetABGameState()

@@ -14,7 +14,9 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 {
 	GENERATED_BODY()
 
-	virtual void PostInitializeComponents() override;
+	UFUNCTION(BlueprintCallable)
+	void InitializeHands(class UStaticMeshComponent* Left, class UStaticMeshComponent *Right);
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UPROPERTY()
@@ -31,6 +33,5 @@ public:
 	void MoveRightRH(float Value);
 	void MoveForwardLH(float Value);
 	void MoveRightLH(float Value);
-	
-	
+	void AddDpadMovementInput(FVector2D DPadDirection, class UStaticMeshComponent* Hand);
 };
