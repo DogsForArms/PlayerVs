@@ -47,25 +47,20 @@ void AABCharacter::MoveRight(float Value)
 
 void AABCharacter::MoveForwardRH(float Value)
 {
-	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
 	AddDpadMovementInput(FVector2D(0, Value), RightHand);
 }
 
 void AABCharacter::MoveRightRH(float Value)
 {
-	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
 	AddDpadMovementInput(FVector2D(Value, 0), RightHand);
 }
 void AABCharacter::MoveForwardLH(float Value)
 {
-	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
 	AddDpadMovementInput(FVector2D(0, Value), LeftHand);
 }
 
 void AABCharacter::MoveRightLH(float Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("MoveRightLH %d"), Value)
-	if (FMath::IsNearlyEqual(FMath::Abs(Value), 0, 0.2f)) { return; }
 	AddDpadMovementInput(FVector2D(Value, 0), LeftHand);
 }
 
