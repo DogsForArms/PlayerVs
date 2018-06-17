@@ -78,7 +78,7 @@ void AABGameMode::HandleMatchHasStarted()
 
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
-	bool bIsReadyToStart = NumPlayers > 1;
+	bool bIsReadyToStart = NumPlayers > 0;
 
 	return bIsReadyToStart;
 }
