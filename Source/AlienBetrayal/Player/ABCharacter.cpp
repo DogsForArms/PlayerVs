@@ -57,7 +57,9 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject"));
 	if (Hand->HasGrippedObjects())
 	{
-		//TODO drop
+		EControllerHand HandType;
+		Hand->GetHandType(HandType);
+		ServerTryDropAll(HandType);
 	}
 	else
 	{
@@ -71,18 +73,12 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 		FVector Start = GrabArea->GetComponentLocation();
 		FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
 //		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 10, 0, 5);
-		DrawDebugSphere(GetWorld(), End, Radius, 16, FColor::Blue, false, 10, 0, 3);
+		DrawDebugSphere(GetWorld(), End, Radius, 4, FColor::Blue, false, 10, 0, 3);
 		bool HitFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
-		if (HitFound) 
+		if (HitFound)
 		{
 			//Todo, if multiple items -- determine priority.
 			FHitResult Hit = OutHits[0];
-			if (Hit.Actor == this)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Ignore Grip On Component -- Owning Actor is this. Component: %s"), *Hit.Component->GetName())
-				return;
-			}
-
 			IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Hit.Component);
 			IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Hit.Actor);
 			FTransform ObjectTransform;
@@ -104,14 +100,11 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 
 
 			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject: Found object to grab..."));
-			if (Grippable)
+			if (Grippable && !Grippable->DenyGripping())
 			{
-				if (!Grippable->DenyGripping()) 
-				{
-					UE_LOG(LogTemp, Warning, TEXT("ServerTyGrab: Hit.Component Grippable & !DenyGripping"));
-					//TODO implement grippable objects!
-					//ServerTryGrab(Hand, ObjectToGrip, Hit);
-				}
+				UE_LOG(LogTemp, Warning, TEXT("ServerTyGrab: Hit.Component Grippable & !DenyGripping"));
+				//TODO implement grippable objects!
+				//ServerTryGrab(Hand, ObjectToGrip, Hit);
 			}
 			else if (Hit.Component->IsSimulatingPhysics(Hit.BoneName))
 			{
@@ -166,7 +159,7 @@ bool AABCharacter::GetBoneTransform(FTransform& BoneTransform, UObject* Componen
 void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName)
 {
 	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip %s"), *ObjectToGrip->GetName())
-	UGripMotionControllerComponent* Hand =		EHand == EControllerHand::Left ? LeftHand : RightHand;
+	UGripMotionControllerComponent* Hand = EHand == EControllerHand::Left ? LeftHand : RightHand;
 	UGripMotionControllerComponent* OtherHand = EHand != EControllerHand::Left ? LeftHand : RightHand;
 	//TODO: Will be a function arguement in the near future
 	bool IsSlotGrip = false;
@@ -184,10 +177,26 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 		1500.f, //Stiffness
 		200.f,  //Damping
 		IsSlotGrip);
-
 }
 
 bool AABCharacter::ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName)
+{
+	return true;
+}
+
+void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
+{
+	UGripMotionControllerComponent* Hand = EHand == EControllerHand::Left ? LeftHand : RightHand;
+
+	TArray<UObject*> GrippedObjects;
+	Hand->GetGrippedObjects(GrippedObjects);
+	for (UObject *GrippedObject : GrippedObjects)
+	{
+		Hand->DropObject(GrippedObject, true);
+	}
+}
+
+bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
 {
 	return true;
 }
@@ -225,4 +234,3 @@ void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionCont
 
 	GetMovementComponent()->AddInputVector(Direction, false);
 }
-

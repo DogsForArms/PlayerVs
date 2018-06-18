@@ -47,6 +47,11 @@ public:
 	void ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName);
 	bool ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName);
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerTryDropAll(EControllerHand EHand);
+	void ServerTryDropAll_Implementation(EControllerHand EHand);
+	bool ServerTryDropAll_Validate(EControllerHand EHand);
+
 	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
 
 	void MoveForwardRH(float Value);
