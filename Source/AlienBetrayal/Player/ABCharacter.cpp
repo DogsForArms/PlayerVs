@@ -35,13 +35,11 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 }
 void AABCharacter::GrabLeft()
 {
-	UE_LOG(LogTemp, Warning, TEXT("GrabLeft"))
 	GripDropOrUseObject(LeftHand, LeftHandGrabArea, RightHand);
 }
 
 void AABCharacter::GrabRight()
 {
-	UE_LOG(LogTemp, Warning, TEXT("GrabRight"))
 	GripDropOrUseObject(RightHand, RightHandGrabArea, LeftHand);
 }
 
@@ -54,7 +52,7 @@ void AABCharacter::GrabRight()
 
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
 {
-	UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject"));
+	UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | %s"), *Hand->GetName());
 	if (Hand->HasGrippedObjects())
 	{
 		EControllerHand HandType;
@@ -72,68 +70,97 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 		float Radius = GrabArea->GetScaledSphereRadius();
 		FVector Start = GrabArea->GetComponentLocation();
 		FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
-//		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 10, 0, 5);
-		DrawDebugSphere(GetWorld(), End, Radius, 4, FColor::Blue, false, 10, 0, 3);
-		bool HitFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
-		if (HitFound)
+		DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
+		bool ObjectFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
+		UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | SweepMultiByObjectType %d"), ObjectFound)
+		
+		//Variables to be initialized by Sweep and Overlap
+		AActor* Actor = NULL;
+		UPrimitiveComponent* Component = NULL;
+		FName BoneName = FName("None");
+
+		// Sweep and Overlap for the above varibales
+		if (ObjectFound)
 		{
 			//Todo, if multiple items -- determine priority.
 			FHitResult Hit = OutHits[0];
-			IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Hit.Component);
-			IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Hit.Actor);
-			FTransform ObjectTransform;
+			Component = Hit.GetComponent();
+			Actor = Hit.GetActor();
+			BoneName = Hit.BoneName;
+		}
+		else
+		{//Try ComponentOverlapMulti
+			TArray<FOverlapResult> OutOverlaps;
+			FComponentQueryParams OverlapParams;
+			OverlapParams.bTraceComplex = true;
+			OverlapParams.AddIgnoredActor(this);
+			ObjectFound = GetWorld()->ComponentOverlapMulti(OutOverlaps, GrabArea, GrabArea->GetComponentLocation(), GrabArea->GetComponentRotation(), OverlapParams);
+			if (ObjectFound)
+			{
+				FOverlapResult Overlap = OutOverlaps[0];
+				Component = Overlap.Component.Get();
+				Actor = Overlap.Actor.Get();
+			}
 			
-			IVRGripInterface* Grippable;
-			UObject* ObjectToGrip;
-			if (GrippableComponent) 
+			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | ComponentOverlapMulti %d"), ObjectFound)
+		}
+
+		if (ObjectFound)
+		{
+			IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Component);
+			IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Actor);
+			IVRGripInterface* Grippable = NULL;
+			UObject* ObjectToGrip = NULL;
+			FTransform ObjectTransform;
+
+			if (GrippableComponent)
 			{
 				Grippable = GrippableComponent;
-				ObjectToGrip = Hit.Component.Get();
-				ObjectTransform = Hit.Component->GetComponentTransform();
+				ObjectToGrip = Component;
+				ObjectTransform = Component->GetComponentTransform();
 			}
 			else
 			{
 				Grippable = GrippableActor;
-				ObjectToGrip = Hit.Actor.Get();
-				ObjectTransform = Hit.Actor->GetActorTransform();
+				ObjectToGrip = Actor;
+				ObjectTransform = Actor->GetActorTransform();
 			}
 
-
-			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject: Found object to grab..."));
+			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Found object to grab..."));
 			if (Grippable && !Grippable->DenyGripping())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ServerTyGrab: Hit.Component Grippable & !DenyGripping"));
+				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | TODO: <Grippable> Component or Actor & !DenyGripping"));
 				//TODO implement grippable objects!
 				//ServerTryGrab(Hand, ObjectToGrip, Hit);
 			}
-			else if (Hit.Component->IsSimulatingPhysics(Hit.BoneName))
+			else if (Component->IsSimulatingPhysics(BoneName))
 			{
 				//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
-				UE_LOG(LogTemp, Warning, TEXT("ServerTyGrab: Hit.Component isSimulatingPhysics"));
+				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
 				FTransform Transform;
-				if (Hit.BoneName == FName("None"))
+				if (BoneName == FName("None"))
 				{
 					Transform = ObjectTransform;
-				} 
+				}
 				else
 				{
-					GetBoneTransform(Transform, ObjectToGrip, Hit.BoneName);
+					GetBoneTransform(Transform, ObjectToGrip, BoneName);
 				}
 
 				EControllerHand HandType;
 				Hand->GetHandType(HandType);
 
 				Transform = Hand->ConvertToControllerRelativeTransform(Transform);
-				ServerTryGrab(HandType, ObjectToGrip, Transform, Hit.BoneName);
+				ServerTryGrab(HandType, ObjectToGrip, Transform, BoneName);
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab: DENIED"));
+				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Object is not moveable"));
 			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Nothing to grab"));
+			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Nothing to Grip"));
 		}
 	}
 }
@@ -161,6 +188,13 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip %s"), *ObjectToGrip->GetName())
 	UGripMotionControllerComponent* Hand = EHand == EControllerHand::Left ? LeftHand : RightHand;
 	UGripMotionControllerComponent* OtherHand = EHand != EControllerHand::Left ? LeftHand : RightHand;
+
+	TArray<UObject*> OtherHandHolding;
+	OtherHand->GetGrippedObjects(OtherHandHolding);
+	if (OtherHandHolding.Contains(ObjectToGrip)) 
+	{
+		OtherHand->DropObject(ObjectToGrip, true);
+	}
 	//TODO: Will be a function arguement in the near future
 	bool IsSlotGrip = false;
 
@@ -201,23 +235,28 @@ bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
 	return true;
 }
 
-void AABCharacter::MoveForwardRH(float Value)
-{
-	AddDpadMovementInput(FVector2D(0, Value), RightHand);
-}
-
 void AABCharacter::MoveRightRH(float Value)
 {
-	AddDpadMovementInput(FVector2D(Value, 0), RightHand);
-}
-void AABCharacter::MoveForwardLH(float Value)
-{
-	AddDpadMovementInput(FVector2D(0, Value), LeftHand);
+	float Forward = GetInputAxisValue(FName("ForwardRH"));
+	float Right = GetInputAxisValue(FName("RightRH"));
+	AddDpadMovementInput(FVector2D(Right, Forward), RightHand);
 }
 
 void AABCharacter::MoveRightLH(float Value)
 {
-	AddDpadMovementInput(FVector2D(Value, 0), LeftHand);
+	float Forward = GetInputAxisValue(FName("ForwardLH"));
+	float Right = GetInputAxisValue(FName("RightLH"));
+	AddDpadMovementInput(FVector2D(Right, Forward), LeftHand);
+}
+
+void AABCharacter::MoveForwardRH(float Value)
+{
+	MoveRightRH(0);
+}
+
+void AABCharacter::MoveForwardLH(float Value)
+{
+	MoveRightLH(0);
 }
 
 void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand)
@@ -230,7 +269,7 @@ void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionCont
 	FVector Up = FVector(0, 0, 1.f);
 	FVector Forward = FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal();
 	FVector Right = FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal();
-	FVector Direction = (Forward * DPadDirection.Y + Right * DPadDirection.X).GetSafeNormal();
+	FVector Direction = (Forward * DPadDirection.Y + Right * DPadDirection.X);
 
 	GetMovementComponent()->AddInputVector(Direction, false);
 }

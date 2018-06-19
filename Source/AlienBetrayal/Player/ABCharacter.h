@@ -37,7 +37,9 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 	float GripTraceLength;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	void GrabLeft();
+	UFUNCTION(BlueprintCallable)
 	void GrabRight();
 
 	void GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand);
