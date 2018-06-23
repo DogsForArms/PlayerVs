@@ -9,27 +9,56 @@
 /**
  * 
  */
+class UGripMotionControllerComponent;
+
 UCLASS()
 class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 {
 	GENERATED_BODY()
 
+	AABCharacter();
+
 	UFUNCTION(BlueprintCallable)
-	void InitializeHands(class UStaticMeshComponent* Left, class UStaticMeshComponent *Right);
+	void InitializeHands(UGripMotionControllerComponent* Left, UGripMotionControllerComponent* Right, USphereComponent* LeftGrab, USphereComponent* RightGrab);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UPROPERTY()
-	class UStaticMeshComponent* LeftHand;
+	UGripMotionControllerComponent* LeftHand;
 	UPROPERTY()
-	class UStaticMeshComponent* RightHand;
+	UGripMotionControllerComponent* RightHand;
+
+	UPROPERTY()
+	USphereComponent* LeftHandGrabArea;
+	UPROPERTY()
+	USphereComponent* RightHandGrabArea;
+
+	UPROPERTY(EditAnywhere, Category = "Grip")
+	float GripTraceLength;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	void GrabLeft();
+	UFUNCTION(BlueprintCallable)
 	void GrabRight();
+
+	void GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand);
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerTryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName);
+	void ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName);
+	bool ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName);
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerTryDropAll(EControllerHand EHand);
+	void ServerTryDropAll_Implementation(EControllerHand EHand);
+	bool ServerTryDropAll_Validate(EControllerHand EHand);
+
+	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
+
 	void MoveForwardRH(float Value);
 	void MoveRightRH(float Value);
 	void MoveForwardLH(float Value);
 	void MoveRightLH(float Value);
-	void AddDpadMovementInput(FVector2D DPadDirection, class UStaticMeshComponent* Hand);
+	void AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand);
 };
