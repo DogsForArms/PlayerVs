@@ -77,3 +77,4 @@ void AGunBase::OnEndUsed_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnEndUsed_Implementation PEW PEW"))
 }
+
