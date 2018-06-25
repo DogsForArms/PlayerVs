@@ -55,7 +55,9 @@ public:
 	void ServerTryDropAll_Implementation(EControllerHand EHand);
 	bool ServerTryDropAll_Validate(EControllerHand EHand);
 
-	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
+	void UseLeft();
+	void UseRight();
+	void ClientUse(UGripMotionControllerComponent* Hand);
 
 	void MoveForwardRH(float Value);
 	void MoveRightRH(float Value);

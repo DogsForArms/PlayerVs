@@ -26,8 +26,6 @@ void AABGameMode::PreInitializeComponents()
 	Super::PreInitializeComponents();
 
 	GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
-
-
 }
 
 void AABGameMode::PreLogin(const FString & Options, const FString & Address, const FUniqueNetIdRepl & UniqueId, FString & ErrorMessage)

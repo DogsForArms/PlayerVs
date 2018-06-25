@@ -9,6 +9,9 @@
 
 class AGrippableStaticMeshActor;
 class UGripMotionControllerComponent;
+class ABulletBase;
+class UArrowComponent;
+
 
 UCLASS()
 class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
@@ -21,6 +24,19 @@ class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
 	virtual void OnUsed_Implementation() override;
 	virtual void OnEndUsed_Implementation() override;
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	virtual void ServerFireGun(FVector Origin, FVector_NetQuantizeNormal ShootDir);
+	virtual void ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeNormal ShootDir);
+	virtual bool ServerFireGun_Validate(FVector Origin, FVector_NetQuantizeNormal ShootDir);
+
+	UPROPERTY(EditAnywhere, Category = "Bullet")
+	TSubclassOf<ABulletBase> BulletTemplate;
+
+	UPROPERTY(EditAnywhere, Category = "Bullet")
+	float BulletVelocity = 700;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
+	UArrowComponent* Muzzle;
 
 public:	
 	AGunBase();

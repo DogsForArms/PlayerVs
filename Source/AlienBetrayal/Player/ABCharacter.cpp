@@ -33,7 +33,14 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 
 	PlayerInputComponent->BindAction("GrabLeft", IE_Pressed, this, &AABCharacter::GrabLeft);
 	PlayerInputComponent->BindAction("GrabRight", IE_Pressed, this, &AABCharacter::GrabRight);
+
+	PlayerInputComponent->BindAction("UseLeft", IE_Pressed, this, &AABCharacter::UseLeft);
+	PlayerInputComponent->BindAction("UseRight", IE_Pressed, this, &AABCharacter::UseRight);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Input - Grab or Drop
+
 void AABCharacter::GrabLeft()
 {
 	GripDropOrUseObject(LeftHand, LeftHandGrabArea, RightHand);
@@ -221,6 +228,36 @@ bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
 {
 	return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Input - Grab or Use
+
+void AABCharacter::UseLeft()
+{
+	ClientUse(LeftHand);
+}
+
+void AABCharacter::UseRight()
+{
+	ClientUse(RightHand);
+}
+
+void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand)
+{
+	TArray<UObject*> GrippedObjects;
+	Hand->GetGrippedObjects(GrippedObjects);
+	for (UObject* GrippedObject : GrippedObjects)
+	{
+		IVRGripInterface* Grip = Cast<IVRGripInterface>(GrippedObject);
+		if (Grip)
+		{
+			Grip->Execute_OnUsed(GrippedObject);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Input - DPad Movement
 
 void AABCharacter::MoveRightRH(float Value)
 {
