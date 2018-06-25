@@ -5,6 +5,7 @@
 #include "GameplayTagsManager.h"
 #include "Actors/BulletBase.h"
 #include "Components/ArrowComponent.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AGunBase::AGunBase()
@@ -14,19 +15,10 @@ AGunBase::AGunBase()
 	Muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
 	Muzzle->SetRelativeScale3D(FVector(0.2, 0.2, 0.2));
 	Muzzle->SetupAttachment(RootComponent);
-
-}
-
-// Called when the game starts or when spawned
-void AGunBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
 }
 
 //////////////////////////////////////////////////////////////////////////
 // IVRGripInterface Overrides
-
 
 void AGunBase::OnGrip_Implementation(UGripMotionControllerComponent* GrippingController, const FBPActorGripInformation& GripInformation)
 {
@@ -80,8 +72,11 @@ void AGunBase::OnGripRelease_Implementation(UGripMotionControllerComponent* Rele
 
 void AGunBase::OnUsed_Implementation()
 {
+	FTransform WorldTransform = Muzzle->GetComponentToWorld();
+	FVector Location = WorldTransform.GetLocation();
+	FVector Forward = WorldTransform.GetRotation().Vector();
 
-	UE_LOG(LogTemp, Warning, TEXT("OnUsed_Implementation PEW PEW"))
+	ServerFireGun(Location, Forward);
 }
 
 void AGunBase::OnEndUsed_Implementation()
@@ -106,7 +101,7 @@ void AGunBase::ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeN
 	{
 		Bullet->Instigator = Instigator;
 		Bullet->SetOwner(this);
-		Bullet->InitializeBullet(ShootDir, BulletVelocity);
+		Bullet->InitializeBullet(BulletVelocity);
 		UGameplayStatics::FinishSpawningActor(Bullet, SpawnTM);
 	}
 }

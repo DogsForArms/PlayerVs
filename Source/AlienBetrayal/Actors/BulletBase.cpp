@@ -39,13 +39,12 @@ ABulletBase::ABulletBase()
 }
 
 
-void ABulletBase::InitializeBullet(FVector Direction, float Velocity)
+void ABulletBase::InitializeBullet(float Velocity)
 {
 	if (!MovementComp)
 	{
 		return;
 	}
-	MovementComp->Velocity = Direction;
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
 }

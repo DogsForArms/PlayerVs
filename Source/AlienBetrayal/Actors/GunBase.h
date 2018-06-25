@@ -43,7 +43,6 @@ public:
 	bool bCanBeFired;
 	bool bWasSocketed;
 
-protected:
-	virtual void BeginPlay() override;
+private:
 
 };

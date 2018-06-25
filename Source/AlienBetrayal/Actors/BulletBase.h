@@ -24,7 +24,7 @@ public:
 	// Sets default values for this actor's properties
 	ABulletBase();
 
-	void InitializeBullet(FVector Direction, float Velocity);
+	void InitializeBullet(float Velocity);
 
 protected:
 
