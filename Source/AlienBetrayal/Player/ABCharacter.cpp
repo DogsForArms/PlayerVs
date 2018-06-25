@@ -44,13 +44,6 @@ void AABCharacter::GrabRight()
 	GripDropOrUseObject(RightHand, RightHandGrabArea, LeftHand);
 }
 
-//VIVE_PawnCharacter >> GripDropOrUseObject
-//VIVE_PawnCharacter >> SelectObjectFromHitArray
-//VIVE_PawnCharacter >> ShouldGripComponent
-//VIVE_PawnCharacter >> GetNearestOverlappingObject
-//VIVE_PawnCharacter >> SelectObjectFromHitArray
-//VIVE_PawnCharacter >> ShouldGripComponent
-
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
 {
 	EControllerHand HandType;
@@ -152,42 +145,19 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 
 				if (!OutHadSlotInRange)
 				{
-					FTransform Transform;
-					if (BoneName == FName("None"))
-					{
-						Transform = ObjectTransform;
-					}
-					else
-					{
-						GetBoneTransform(Transform, ObjectToGrip, BoneName);
-					}
-
-					Transform = Hand->ConvertToControllerRelativeTransform(Transform);
-					GripTransform = Transform;
+					GripTransform = GetHandRelativeTransformOfBoneOrObject(Hand, ObjectToGrip, ObjectTransform, BoneName);
 				}
 				else
 				{
 					UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
 				}
 				ServerTryGrab(HandType, ObjectToGrip, GripTransform, BoneName, false);
-				//object to grip, hand, isS slot grip, grip transform, grip secondary tag?, optioanl bone name, is secondary grip
-				
 			}
 			else if (Component->IsSimulatingPhysics(BoneName))
 			{
 				//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
 				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
-				FTransform Transform;
-				if (BoneName == FName("None"))
-				{
-					Transform = ObjectTransform;
-				}
-				else
-				{
-					GetBoneTransform(Transform, ObjectToGrip, BoneName);
-				}
-
-				Transform = Hand->ConvertToControllerRelativeTransform(Transform);
+				FTransform Transform = GetHandRelativeTransformOfBoneOrObject(Hand, ObjectToGrip, ObjectTransform, BoneName);
 				ServerTryGrab(HandType, ObjectToGrip, Transform, BoneName, false);
 			}
 			else
@@ -202,29 +172,11 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	}
 }
 
-bool AABCharacter::GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName)
-{
-	USceneComponent* Component = Cast<USceneComponent>(ComponentOrActor);
-	if (Component)
-	{
-		BoneTransform = Component->GetSocketTransform(BoneName, RTS_World);
-	}
-
-	ASkeletalMeshActor* SkeletalMeshActor = Cast<ASkeletalMeshActor>(ComponentOrActor);
-	if (SkeletalMeshActor)
-	{
-		return GetBoneTransform(BoneTransform, SkeletalMeshActor->GetSkeletalMeshComponent(), BoneName);
-	}
-
-	return false;
-}
-
-//TryToGrabObject 
 void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
 {
 	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip: %s bIsSlotGrip: %d"), *ObjectToGrip->GetName(), bIsSlotGrip)
-	UGripMotionControllerComponent* Hand = EHand == EControllerHand::Left ? LeftHand : RightHand;
-	UGripMotionControllerComponent* OtherHand = EHand != EControllerHand::Left ? LeftHand : RightHand;
+	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
+	UGripMotionControllerComponent* OtherHand = Hand == LeftHand ? RightHand : LeftHand;
 
 	TArray<UObject*> OtherHandHolding;
 	OtherHand->GetGrippedObjects(OtherHandHolding);
@@ -255,7 +207,7 @@ bool AABCharacter::ServerTryGrab_Validate(EControllerHand EHand, UObject* Object
 
 void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
 {
-	UGripMotionControllerComponent* Hand = EHand == EControllerHand::Left ? LeftHand : RightHand;
+	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 
 	TArray<UObject*> GrippedObjects;
 	Hand->GetGrippedObjects(GrippedObjects);
@@ -309,11 +261,55 @@ void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionCont
 	GetMovementComponent()->AddInputVector(Direction, false);
 }
 
-/**
-	Private
-*/
+//////////////////////////////////////////////////////////////////////////
+// Private helper methods
 
 FName AABCharacter::GetPrimarySlotPrefix(UObject* ObjectToGrip, UGripMotionControllerComponent* Hand)
 {
 	return FName("None");
+}
+
+FTransform AABCharacter::GetHandRelativeTransformOfBoneOrObject(UGripMotionControllerComponent* Hand, UObject* ObjectToGrip, FTransform ObjectTransform, FName BoneName)
+{
+	FTransform Transform;
+	if (BoneName == FName("None"))
+	{
+		Transform = ObjectTransform;
+	}
+	else
+	{
+		GetBoneTransform(Transform, ObjectToGrip, BoneName);
+	}
+
+	Transform = Hand->ConvertToControllerRelativeTransform(Transform);
+	return Transform;
+}
+
+bool AABCharacter::GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName)
+{
+	USceneComponent* Component = Cast<USceneComponent>(ComponentOrActor);
+	if (Component)
+	{
+		BoneTransform = Component->GetSocketTransform(BoneName, RTS_World);
+	}
+
+	ASkeletalMeshActor* SkeletalMeshActor = Cast<ASkeletalMeshActor>(ComponentOrActor);
+	if (SkeletalMeshActor)
+	{
+		return GetBoneTransform(BoneTransform, SkeletalMeshActor->GetSkeletalMeshComponent(), BoneName);
+	}
+
+	return false;
+}
+
+UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand EHand)
+{
+	switch (EHand) {
+	case EControllerHand::Left:
+		return LeftHand;
+	case EControllerHand::Right:
+		return RightHand;
+	default:
+		return NULL;
+	}
 }

@@ -39,6 +39,7 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 public:
 	UFUNCTION(BlueprintCallable)
 	void GrabLeft();
+
 	UFUNCTION(BlueprintCallable)
 	void GrabRight();
 
@@ -64,4 +65,8 @@ public:
 
 private:
 	FName GetPrimarySlotPrefix(UObject* ObjectToGrip, UGripMotionControllerComponent* Hand);
+	FTransform GetHandRelativeTransformOfBoneOrObject(UGripMotionControllerComponent* Hand, UObject* ObjectToGrip, FTransform ObjectTransform, FName BoneName);
+	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
+	
+	UGripMotionControllerComponent* GetHandReference(EControllerHand EHand);
 };
