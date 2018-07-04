@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/PlayerWidget.h"
 #include "ABCharacter.h"
+#include "Online/SteamHandler.h"
 
 AABPlayerController::AABPlayerController()
 {
@@ -102,6 +103,9 @@ void AABPlayerController::BeginPlay()
 		//Widget can be created after OnRep_Team event, then your team will not be displayed. :[
 		OnRep_Team();
 	}
+
+    FString SteamID = ASteamHandler::GetSteamID(this);
+    UE_LOG(LogTemp, Warning, TEXT("GetSteamID : %s"), *SteamID)
 }
 
 void AABPlayerController::SetupInputComponent()
