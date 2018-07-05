@@ -104,8 +104,9 @@ void AABPlayerController::BeginPlay()
 		OnRep_Team();
 	}
 
-    FString SteamID = ASteamHandler::GetSteamID(this);
-    UE_LOG(LogTemp, Warning, TEXT("GetSteamID : %s"), *SteamID)
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: GetSteamID : %s"), *ASteamHandler::GetSteamID(this))
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: OnlineServiceName : %s"), *ASteamHandler::GetOnlineServiceName())
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: HasVoice : %d"), ASteamHandler::HasVoice())
 }
 
 void AABPlayerController::SetupInputComponent()

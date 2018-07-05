@@ -23,3 +23,20 @@ FString ASteamHandler::GetSteamID(APlayerController* PC)
     return "Error";
 }
 
+FString ASteamHandler::GetOnlineServiceName()
+{
+    IOnlineSubsystem* ion = IOnlineSubsystem::Get();
+    FText Name = ion->GetOnlineServiceName();
+    return Name.ToString();
+}
+
+bool ASteamHandler::HasVoice()
+{
+    IOnlineSubsystem* ion = IOnlineSubsystem::Get();
+    IOnlineVoicePtr Voice = ion->GetVoiceInterface();
+    if (Voice.IsValid()) {
+        return true;
+    }
+    return false;
+}
+

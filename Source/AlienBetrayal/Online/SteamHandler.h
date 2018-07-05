@@ -19,6 +19,7 @@ protected:
 
 public:
     static FString GetSteamID(APlayerController* PC);
-	
+    static FString GetOnlineServiceName();
+    static bool HasVoice();
 	
 };
