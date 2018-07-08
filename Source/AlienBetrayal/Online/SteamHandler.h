@@ -21,5 +21,7 @@ public:
     static FString GetSteamID(APlayerController* PC);
     static FString GetOnlineServiceName();
     static bool HasVoice();
+
+    static bool ToggleSpeaking(APlayerController* PC, bool bSpeaking);
 	
 };

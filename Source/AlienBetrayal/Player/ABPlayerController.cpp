@@ -112,5 +112,16 @@ void AABPlayerController::BeginPlay()
 void AABPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	//InputComponent->BindAction("Esc", IE_Pressed, this, &AOrthoPlayerController::ToggleGameMenu);
+    InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::EnableVoice);
+    InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::DisableVoice);
+}
+
+void AABPlayerController::EnableVoice()
+{
+    StartTalking();
+}
+
+void AABPlayerController::DisableVoice()
+{
+    StopTalking();
 }

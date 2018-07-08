@@ -17,6 +17,10 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+
+    void EnableVoice();
+    void DisableVoice();
+
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
 	/** replicate team.  TODO Updated the players hud*/
