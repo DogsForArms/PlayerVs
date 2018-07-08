@@ -8,7 +8,7 @@ public class AlienBetrayal : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "OnlineSubsystem" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "VRExpansionPlugin", "OnlineSubsystem" });
 
         DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 

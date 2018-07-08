@@ -3,7 +3,6 @@
 #include "ABPlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine.h"
-#include "Blueprint/UserWidget.h"
 #include "UI/PlayerWidget.h"
 #include "ABCharacter.h"
 #include "Online/SteamHandler.h"

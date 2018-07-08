@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SteamHandler.h"
-#include "Core.h"
+#include "CoreMinimal.h"
 #include "Online.h"
 
 ASteamHandler::ASteamHandler()

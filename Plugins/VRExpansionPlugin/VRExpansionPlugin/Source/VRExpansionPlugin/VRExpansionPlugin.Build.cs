@@ -17,8 +17,10 @@ public class VRExpansionPlugin : ModuleRules
         PublicDefinitions.Add("WITH_VR_EXPANSION=1");
 
         // To detect VR Preview, not built out in packaged builds
+        
         if (Target.bBuildEditor == true)
         {
+            Log.TraceInformation("hello world, include UnrealEd Enabled");
             PrivateDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd"
