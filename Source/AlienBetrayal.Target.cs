@@ -8,7 +8,7 @@ public class AlienBetrayalTarget : TargetRules
 	public AlienBetrayalTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
-
+        bUsesSteam = true;
 		ExtraModuleNames.AddRange( new string[] { "AlienBetrayal" } );
 	}
 }

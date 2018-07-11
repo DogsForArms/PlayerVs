@@ -3,9 +3,9 @@
 #include "ABPlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine.h"
-#include "Blueprint/UserWidget.h"
 #include "UI/PlayerWidget.h"
 #include "ABCharacter.h"
+#include "Online/SteamHandler.h"
 
 AABPlayerController::AABPlayerController()
 {
@@ -102,10 +102,25 @@ void AABPlayerController::BeginPlay()
 		//Widget can be created after OnRep_Team event, then your team will not be displayed. :[
 		OnRep_Team();
 	}
+
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: GetSteamID : %s"), *ASteamHandler::GetSteamID(this))
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: OnlineServiceName : %s"), *ASteamHandler::GetOnlineServiceName())
+    UE_LOG(LogTemp, Warning, TEXT("DebugSteam: HasVoice : %d"), ASteamHandler::HasVoice())
 }
 
 void AABPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	//InputComponent->BindAction("Esc", IE_Pressed, this, &AOrthoPlayerController::ToggleGameMenu);
+    InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::EnableVoice);
+    InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::DisableVoice);
+}
+
+void AABPlayerController::EnableVoice()
+{
+    StartTalking();
+}
+
+void AABPlayerController::DisableVoice()
+{
+    StopTalking();
 }
