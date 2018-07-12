@@ -2,6 +2,6 @@
 	"BuildId": "7f9eb93e-a553-4600-9e0f-1c8a43264089",
 	"Modules": 
 	{
-		"OpenVRExpansionPlugin": "UE4Editor-OpenVRExpansionPlugin.dll"
+		"AdvancedSteamSessions": "UE4Editor-AdvancedSteamSessions.dll"
 	}
 }
