@@ -76,7 +76,8 @@ Intermediate/*
 
 Plugins/VRExpansionPlugin/VRExpansionPlugin/Intermediate/*
 Plugins/VRExpansionPlugin/OpenVRExpansionPlugin/Intermediate/*
-Plugins/*/Intermediate/*
+Plugins/**/Intermediate/*
+Plugins/**/Binaries/*
 
 # Cache files for the editor to use
 DerivedDataCache/*

@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{E97BB720-45F6-83F7-9582-75874419E797}",
+	"EngineAssociation": "{D928EC1F-C94F-E9A7-3FC6-9189BEA99484}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -29,8 +29,8 @@
 		}
 	],
 	"TargetPlatforms": [
-		"MacNoEditor",
 		"WindowsNoEditor",
-		"LinuxNoEditor"
+		"LinuxNoEditor",
+		"MacNoEditor"
 	]
 }

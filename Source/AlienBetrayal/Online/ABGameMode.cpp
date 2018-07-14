@@ -32,11 +32,13 @@ void AABGameMode::PreLogin(const FString & Options, const FString & Address, con
 	if (MyGameState->HasMatchEnded()) 
 	{
 		ErrorMessage = TEXT("Match has finished.");
+		UE_LOG(LogTemp, Warning, TEXT("Player could not join %s"), *ErrorMessage)
 	}
 	else
 	if (MyGameState->HasMatchStarted())
 	{
 		ErrorMessage = TEXT("Match has started.");
+		UE_LOG(LogTemp, Warning, TEXT("Player could not join %s"), *ErrorMessage)
 	}
 	else
 	{
@@ -74,7 +76,7 @@ void AABGameMode::HandleMatchHasStarted()
 
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
-	bool bIsReadyToStart = NumPlayers > 0;
+	bool bIsReadyToStart = NumPlayers > 1;
 
 	return bIsReadyToStart;
 }
