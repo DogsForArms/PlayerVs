@@ -19,14 +19,9 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 	AABCharacter();
 
 	UFUNCTION(BlueprintCallable)
-	void InitializeHands(UGripMotionControllerComponent* Left, UGripMotionControllerComponent* Right, USphereComponent* LeftGrab, USphereComponent* RightGrab);
+	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	UPROPERTY()
-	UGripMotionControllerComponent* LeftHand;
-	UPROPERTY()
-	UGripMotionControllerComponent* RightHand;
 
 	UPROPERTY()
 	USphereComponent* LeftHandGrabArea;

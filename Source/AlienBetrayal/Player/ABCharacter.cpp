@@ -12,10 +12,8 @@ AABCharacter::AABCharacter()
 	GripTraceLength = 1.f;
 }
 
-void AABCharacter::InitializeHands(UGripMotionControllerComponent* Left, UGripMotionControllerComponent* Right, USphereComponent* LeftGrab, USphereComponent* RightGrab)
+void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
 {
-	LeftHand = Left;
-	RightHand = Right;
 	LeftHandGrabArea = LeftGrab;
 	RightHandGrabArea = RightGrab;
 }
@@ -43,12 +41,12 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 
 void AABCharacter::GrabLeft()
 {
-	GripDropOrUseObject(LeftHand, LeftHandGrabArea, RightHand);
+	GripDropOrUseObject(LeftMotionController, LeftHandGrabArea, RightMotionController);
 }
 
 void AABCharacter::GrabRight()
 {
-	GripDropOrUseObject(RightHand, RightHandGrabArea, LeftHand);
+	GripDropOrUseObject(RightMotionController, RightHandGrabArea, LeftMotionController);
 }
 
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
@@ -183,7 +181,7 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 {
 	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip: %s bIsSlotGrip: %d"), *ObjectToGrip->GetName(), bIsSlotGrip)
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
-	UGripMotionControllerComponent* OtherHand = Hand == LeftHand ? RightHand : LeftHand;
+	UGripMotionControllerComponent* OtherHand = Hand == LeftMotionController ? RightMotionController : LeftMotionController;
 
 	TArray<UObject*> OtherHandHolding;
 	OtherHand->GetGrippedObjects(OtherHandHolding);
@@ -234,12 +232,12 @@ bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
 
 void AABCharacter::UseLeft()
 {
-	ClientUse(LeftHand);
+	ClientUse(LeftMotionController);
 }
 
 void AABCharacter::UseRight()
 {
-	ClientUse(RightHand);
+	ClientUse(RightMotionController);
 }
 
 void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand)
@@ -263,14 +261,14 @@ void AABCharacter::MoveRightRH(float Value)
 {
 	float Forward = GetInputAxisValue(FName("ForwardRH"));
 	float Right = GetInputAxisValue(FName("RightRH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), RightHand);
+	AddDpadMovementInput(FVector2D(Right, Forward), RightMotionController);
 }
 
 void AABCharacter::MoveRightLH(float Value)
 {
 	float Forward = GetInputAxisValue(FName("ForwardLH"));
 	float Right = GetInputAxisValue(FName("RightLH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), LeftHand);
+	AddDpadMovementInput(FVector2D(Right, Forward), LeftMotionController);
 }
 
 void AABCharacter::MoveForwardRH(float Value)
@@ -343,9 +341,9 @@ UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand E
 {
 	switch (EHand) {
 	case EControllerHand::Left:
-		return LeftHand;
+		return LeftMotionController;
 	case EControllerHand::Right:
-		return RightHand;
+		return RightMotionController;
 	default:
 		return NULL;
 	}
