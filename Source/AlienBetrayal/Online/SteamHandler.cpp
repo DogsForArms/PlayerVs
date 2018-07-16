@@ -3,11 +3,12 @@
 #include "SteamHandler.h"
 #include "CoreMinimal.h"
 #include "Online.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/PlayerController.h"
 
 ASteamHandler::ASteamHandler()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
 }
 
 FString ASteamHandler::GetSteamID(APlayerController* PC)

@@ -6,16 +6,60 @@
 #include "Animation/SkeletalMeshActor.h"
 #include "DrawDebugHelpers.h"
 #include "VRGlobalSettings.h"
+#include "VoiceConfig.h"
+#include "Online/SteamHandler.h"
+#include "GameFramework/PlayerController.h"
+
+//////////////////////////////////////////////////////////////////////////
+// Initialization
 
 AABCharacter::AABCharacter()
 {
 	GripTraceLength = 1.f;
+	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
 }
 
 void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
 {
 	LeftHandGrabArea = LeftGrab;
 	RightHandGrabArea = RightGrab;
+}
+
+void AABCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	SetupTalker();
+}
+
+void AABCharacter::SetupTalker()
+{
+	FVoiceSettings Settings = Talker->Settings;
+	Settings.ComponentToAttachTo = VRReplicatedCamera;
+	Talker->Settings = Settings;
+	Talker->RegisterWithPlayerState(PlayerState);
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (PlayerController)
+	{
+		PlayerController->ToggleSpeaking(true);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Debugging
+
+void AABCharacter::DebugVoice(bool bDropVoice, bool bLoopback)
+{
+	SetupTalker(); //make sure talker was setup
+	FVoiceSettings Settings = Talker->Settings;
+	Settings.ComponentToAttachTo = bDropVoice ? NULL : VRReplicatedCamera;
+	Talker->Settings = Settings;
+
+	auto Command = bLoopback ? TEXT("OSS.VoiceLoopback 1") : TEXT("OSS.VoiceLoopback 0");
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (PlayerController)
+	{
+		PlayerController->ConsoleCommand(Command, true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

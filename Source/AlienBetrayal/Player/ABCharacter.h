@@ -10,6 +10,7 @@
  * 
  */
 class UGripMotionControllerComponent;
+class UVOIPTalker;
 
 UCLASS()
 class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
@@ -20,6 +21,9 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
+
+	void SetupTalker();
+	void OnRep_PlayerState() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -32,6 +36,16 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 	float GripTraceLength;
 
 public:
+	// Voice Debugging (must be done in standalone).  bDrdopVoice will put your voice on the ground to test spacialization.
+	// bLoopback loops your audio back to you.
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	void DebugVoice(bool bDropVoice, bool bLoopback);
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = "Voice")
+	UVOIPTalker* Talker;
+
 	UFUNCTION(BlueprintCallable)
 	void GrabLeft();
 
