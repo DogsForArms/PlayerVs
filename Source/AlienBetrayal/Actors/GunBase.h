@@ -11,7 +11,7 @@ class AGrippableStaticMeshActor;
 class UGripMotionControllerComponent;
 class ABulletBase;
 class UArrowComponent;
-
+class UAudioComponent;
 
 UCLASS()
 class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
@@ -38,10 +38,19 @@ class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 	UArrowComponent* Muzzle;
 
+public:
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	UAudioComponent* GunfireAudio;
+
 public:	
 	AGunBase();
 	bool bCanBeFired;
 	bool bWasSocketed;
+
+	UFUNCTION(Unreliable, Client)
+	void PlayGunEffects(bool bForce);
+	void PlayGunEffects_Implementation(bool bForce);
 
 private:
 

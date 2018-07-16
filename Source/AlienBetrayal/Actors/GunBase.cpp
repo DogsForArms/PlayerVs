@@ -7,14 +7,20 @@
 #include "Components/ArrowComponent.h"
 #include "DrawDebugHelpers.h"
 
-// Sets default values
+//////////////////////////////////////////////////////////////////////////
+// Initialization
+
 AGunBase::AGunBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	Muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
+	Muzzle = CreateDefaultSubobject<UArrowComponent>("Arrow");
 	Muzzle->SetRelativeScale3D(FVector(0.2, 0.2, 0.2));
 	Muzzle->SetupAttachment(RootComponent);
+
+	GunfireAudio = CreateDefaultSubobject<UAudioComponent>("GunfireAudio");
+	GunfireAudio->SetupAttachment(Muzzle);
+	GunfireAudio->bAutoActivate = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -39,6 +45,8 @@ void AGunBase::OnUsed_Implementation()
 	FVector Forward = WorldTransform.GetRotation().Vector();
 
 	ServerFireGun(Location, Forward);
+	//TODO how to replicate to all clients except me.
+	PlayGunEffects(true);
 }
 
 void AGunBase::OnEndUsed_Implementation()
@@ -71,4 +79,10 @@ void AGunBase::ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeN
 bool AGunBase::ServerFireGun_Validate(FVector Origin, FVector_NetQuantizeNormal ShootDir)
 {
 	return true;
+}
+
+void AGunBase::PlayGunEffects_Implementation(bool bForce)
+{
+	if (!bForce /*&& !GunIsLocallyControlled*/) { return; }
+	GunfireAudio->Play();
 }

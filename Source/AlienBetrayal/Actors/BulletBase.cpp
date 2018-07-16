@@ -4,6 +4,8 @@
 #include "BulletBase.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ABulletBase::ABulletBase()
@@ -11,7 +13,7 @@ ABulletBase::ABulletBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
+	CollisionComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
 	CollisionComp->InitSphereRadius(5.0f);
 	CollisionComp->AlwaysLoadOnClient = true;
 	CollisionComp->AlwaysLoadOnServer = true;
@@ -24,12 +26,16 @@ ABulletBase::ABulletBase()
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	RootComponent = CollisionComp;
 
-	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
+	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileComp");
 	MovementComp->UpdatedComponent = CollisionComp;
 	MovementComp->InitialSpeed = 2000.0f;
 	MovementComp->MaxSpeed = 2000.0f;
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->ProjectileGravityScale = 0.f;
+
+	ImpactSound = CreateDefaultSubobject<UAudioComponent>("ImpactComponent");
+	ImpactSound->bAutoActivate = false;
+	ImpactSound->SetupAttachment(CollisionComp);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PrePhysics;
@@ -38,6 +44,11 @@ ABulletBase::ABulletBase()
 	bReplicateMovement = true;
 }
 
+void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ABulletBase, bExploded);
+}
 
 void ABulletBase::InitializeBullet(float Velocity)
 {
@@ -47,4 +58,29 @@ void ABulletBase::InitializeBullet(float Velocity)
 	}
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
+}
+
+void ABulletBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	MovementComp->OnProjectileStop.AddDynamic(this, &ABulletBase::OnImpact);
+	SetLifeSpan(10.0f);
+	//CollisionComp->MoveIgnoreActors.Add(Instigator);
+
+}
+
+void ABulletBase::OnImpact(const FHitResult& HitResult)
+{
+	if (Role == ROLE_Authority && !bExploded)
+	{
+		bExploded = true;
+		OnRep_Exploded();
+	}
+}
+
+void ABulletBase::OnRep_Exploded()
+{
+	MovementComp->StopMovementImmediately();
+	ImpactSound->Play();
+	SetLifeSpan(2.0f);
 }
