@@ -12,7 +12,6 @@ ASteamHandler::ASteamHandler()
 
 FString ASteamHandler::GetSteamID(APlayerController* PC)
 {
-
     ULocalPlayer* LP = Cast<ULocalPlayer>(PC->Player);
     if (LP)
     {

@@ -22,6 +22,7 @@ public:
     static FString GetOnlineServiceName();
     static bool HasVoice();
 
+	UFUNCTION(BlueprintCallable, Category = "Voice")
     static bool ToggleSpeaking(APlayerController* PC, bool bSpeaking);
 	
 };
