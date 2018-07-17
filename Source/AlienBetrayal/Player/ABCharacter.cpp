@@ -101,7 +101,7 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | %s"), *Hand->GetName());
 	if (Hand->HasGrippedObjects())
 	{
-		ServerTryDropAll(HandType);
+		CallCorrectDropEvent(Hand);
 	}
 	else
 	{
@@ -200,14 +200,14 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 				{
 					UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
 				}
-				ServerTryGrab(HandType, ObjectToGrip, GripTransform, BoneName, false);
+				CallCorrectGrabEvent(HandType, ObjectToGrip, GripTransform, BoneName, false);
 			}
 			else if (Component->IsSimulatingPhysics(BoneName))
 			{
 				//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
 				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
 				FTransform Transform = GetHandRelativeTransformOfBoneOrObject(Hand, ObjectToGrip, ObjectTransform, BoneName);
-				ServerTryGrab(HandType, ObjectToGrip, Transform, BoneName, false);
+				CallCorrectGrabEvent(HandType, ObjectToGrip, Transform, BoneName, false);
 			}
 			else
 			{
@@ -221,7 +221,20 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	}
 }
 
-void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
+void AABCharacter::CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
+{
+	if (IsLocalGripOrDropEvent(ObjectToGrip)) 
+	{
+		TryGrab(EHand, ObjectToGrip, Transform, BoneName, bIsSlotGrip);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server Try Grab:: TODO untested"));
+		ServerTryGrab(EHand, ObjectToGrip, Transform, BoneName, bIsSlotGrip);
+	}
+}
+
+void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
 {
 	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip: %s bIsSlotGrip: %d"), *ObjectToGrip->GetName(), bIsSlotGrip)
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
@@ -229,7 +242,7 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 
 	TArray<UObject*> OtherHandHolding;
 	OtherHand->GetGrippedObjects(OtherHandHolding);
-	if (OtherHandHolding.Contains(ObjectToGrip)) 
+	if (OtherHandHolding.Contains(ObjectToGrip))
 	{
 		OtherHand->DropObject(ObjectToGrip, true);
 	}
@@ -260,12 +273,37 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 	}
 }
 
+void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
+{
+	TryGrab(EHand, ObjectToGrip, Transform, BoneName, bIsSlotGrip);
+}
+
 bool AABCharacter::ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
 {
 	return true;
 }
 
-void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
+void AABCharacter::CallCorrectDropEvent(UGripMotionControllerComponent* Hand)
+{
+	if (!Hand->HasGrippedObjects()) { return; }
+	EControllerHand EHand;
+	Hand->GetHandType(EHand);
+
+	TArray<UObject*> GrippedObjects;
+	Hand->GetGrippedObjects(GrippedObjects);
+
+	if (IsLocalGripOrDropEvent(GrippedObjects[0]))
+	{
+		TryDropAll(EHand);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server Drop All:: TODO untested"));
+		ServerTryDropAll(EHand);
+	}
+}
+
+void AABCharacter::TryDropAll(EControllerHand EHand)
 {
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 
@@ -275,6 +313,11 @@ void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
 	{
 		Hand->DropObject(GrippedObject, true);
 	}
+}
+
+void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
+{
+	TryDropAll(EHand);
 }
 
 bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
@@ -402,4 +445,18 @@ UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand E
 	default:
 		return NULL;
 	}
+}
+
+bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
+{
+	EGripMovementReplicationSettings GripRepType;
+	IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(ObjectToGrip);
+	if (GrippableComponent)
+	{
+		GripRepType = GrippableComponent->Execute_GripMovementReplicationType(ObjectToGrip);
+	}
+
+	return 
+		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive ||
+		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive_NoRep;
 }

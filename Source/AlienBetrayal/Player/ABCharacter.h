@@ -52,17 +52,30 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GrabRight();
 
+	UFUNCTION()
 	void GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand);
+
+	UFUNCTION()
+	void CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
 
 	UFUNCTION(Reliable, Server, WithValidation)
 	void ServerTryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
 	void ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
 	bool ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
 
+	UFUNCTION()
+	void TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
+
+	UFUNCTION()
+	void CallCorrectDropEvent(UGripMotionControllerComponent* Hand);
+
 	UFUNCTION(Reliable, Server, WithValidation)
 	void ServerTryDropAll(EControllerHand EHand);
 	void ServerTryDropAll_Implementation(EControllerHand EHand);
 	bool ServerTryDropAll_Validate(EControllerHand EHand);
+
+	UFUNCTION()
+	void TryDropAll(EControllerHand EHand);
 
 	void UseLeft();
 	void UseRight();
@@ -80,4 +93,6 @@ private:
 	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
 	
 	UGripMotionControllerComponent* GetHandReference(EControllerHand EHand);
+
+	bool IsLocalGripOrDropEvent(UObject* ObjectToGrip);
 };
