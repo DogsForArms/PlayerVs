@@ -80,7 +80,7 @@ void AGunBase::ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeN
 	{
 		Bullet->Instigator = Instigator;
 		Bullet->SetOwner(this);
-		Bullet->InitializeBullet(BulletVelocity);
+		Bullet->InitializeBullet(BulletVelocity, this);
 		UGameplayStatics::FinishSpawningActor(Bullet, SpawnTM);
 	}
 }

@@ -35,7 +35,7 @@ public:
 	// Sets default values for this actor's properties
 	ABulletBase();
 
-	void InitializeBullet(float Velocity);
+	void InitializeBullet(float Velocity, AActor* Gun);
 
 protected:
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_Exploded)

@@ -50,7 +50,7 @@ void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLi
 	DOREPLIFETIME(ABulletBase, bExploded);
 }
 
-void ABulletBase::InitializeBullet(float Velocity)
+void ABulletBase::InitializeBullet(float Velocity, AActor* Gun)
 {
 	if (!MovementComp)
 	{
@@ -58,6 +58,7 @@ void ABulletBase::InitializeBullet(float Velocity)
 	}
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
+	CollisionComp->MoveIgnoreActors.Add(Gun);
 }
 
 void ABulletBase::PostInitializeComponents()
@@ -65,8 +66,6 @@ void ABulletBase::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	MovementComp->OnProjectileStop.AddDynamic(this, &ABulletBase::OnImpact);
 	SetLifeSpan(10.0f);
-	//CollisionComp->MoveIgnoreActors.Add(Instigator);
-
 }
 
 void ABulletBase::OnImpact(const FHitResult& HitResult)
