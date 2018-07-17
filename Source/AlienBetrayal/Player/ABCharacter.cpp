@@ -234,19 +234,30 @@ void AABCharacter::ServerTryGrab_Implementation(EControllerHand EHand, UObject* 
 		OtherHand->DropObject(ObjectToGrip, true);
 	}
 
-	//Bla de bla, TODO logic for switching hands.
-	Hand->GripObject(
+	bool bInterfaceGrab = Hand->GripObjectByInterface(
 		ObjectToGrip,
 		Transform,
-		true, //Transform is relative
-		FName("None"),
+		true,
 		BoneName,
-		EGripCollisionType::InteractiveCollisionWithPhysics,
-		EGripLateUpdateSettings::NotWhenCollidingOrDoubleGripping,
-		EGripMovementReplicationSettings::ForceClientSideMovement,
-		1500.f, //Stiffness
-		200.f,  //Damping
-		bIsSlotGrip);
+		bIsSlotGrip
+	);
+	UE_LOG(LogTemp, Warning, TEXT("Object is interface grab %d"), bInterfaceGrab)
+	if (!bInterfaceGrab)
+	{
+		//Bla de bla, TODO logic for switching hands.
+		Hand->GripObject(
+			ObjectToGrip,
+			Transform,
+			true, //Transform is relative
+			FName("None"),
+			BoneName,
+			EGripCollisionType::InteractiveCollisionWithPhysics,
+			EGripLateUpdateSettings::NotWhenCollidingOrDoubleGripping,
+			EGripMovementReplicationSettings::ForceClientSideMovement,
+			1500.f, //Stiffness
+			200.f,  //Damping
+			bIsSlotGrip);
+	}
 }
 
 bool AABCharacter::ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)

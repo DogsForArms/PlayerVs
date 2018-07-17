@@ -21,6 +21,12 @@ AGunBase::AGunBase()
 	GunfireAudio = CreateDefaultSubobject<UAudioComponent>("GunfireAudio");
 	GunfireAudio->SetupAttachment(Muzzle);
 	GunfireAudio->bAutoActivate = false;
+
+	bAlwaysRelevant = true;
+	VRGripInterfaceSettings.MovementReplicationType = EGripMovementReplicationSettings::ClientSide_Authoritive;
+	VRGripInterfaceSettings.AdvancedGripSettings.bSetOwnerOnGrip = true;
+	VRGripInterfaceSettings.AdvancedGripSettings.PhysicsSettings.bUsePhysicsSettings = true;
+	VRGripInterfaceSettings.AdvancedGripSettings.PhysicsSettings.bTurnOffGravityDuringGrip = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -28,11 +34,12 @@ AGunBase::AGunBase()
 
 void AGunBase::OnGrip_Implementation(UGripMotionControllerComponent* GrippingController, const FBPActorGripInformation& GripInformation)
 {
-
+	Super::OnGrip_Implementation(GrippingController, GripInformation);
 }
 
 void AGunBase::OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketedValue)
 {
+	Super::OnGripRelease_Implementation(ReleasingController, GripInformation, bWasSocketed);
 	UE_LOG(LogTemp, Warning, TEXT("OnGripRelease_Implementation"));
 	bWasSocketed = bWasSocketedValue;
 	SetActorTickEnabled(true);
@@ -40,6 +47,7 @@ void AGunBase::OnGripRelease_Implementation(UGripMotionControllerComponent* Rele
 
 void AGunBase::OnUsed_Implementation()
 {
+	Super::OnUsed_Implementation();
 	FTransform WorldTransform = Muzzle->GetComponentToWorld();
 	FVector Location = WorldTransform.GetLocation();
 	FVector Forward = WorldTransform.GetRotation().Vector();
@@ -51,6 +59,7 @@ void AGunBase::OnUsed_Implementation()
 
 void AGunBase::OnEndUsed_Implementation()
 {
+	Super::OnEndUsed_Implementation();
 	UE_LOG(LogTemp, Warning, TEXT("OnEndUsed_Implementation PEW PEW"))
 }
 
