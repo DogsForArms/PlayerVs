@@ -20,7 +20,6 @@ public class VRExpansionPlugin : ModuleRules
         
         if (Target.bBuildEditor == true)
         {
-            Log.TraceInformation("hello world, include UnrealEd Enabled");
             PrivateDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd"
