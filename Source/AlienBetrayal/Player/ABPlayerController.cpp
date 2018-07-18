@@ -34,9 +34,7 @@ void AABPlayerController::InitiateHMD()
 	};
 
 	for (const FString &Cmd : Commands)
-	{
 		ConsoleCommand(Cmd, true);
-	}
 }
 
 void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
