@@ -34,6 +34,9 @@ public:
 	void InitiatePlay();
 	void InitiatePlay_Implementation();
 
+	UFUNCTION()
+	void InitiateHMD();
+
 	UFUNCTION(Reliable, Server, WithValidation)
 	void InitiatePlayHelperServer(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
 	void InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);

@@ -23,6 +23,16 @@ void AABPlayerController::InitiatePlay_Implementation()
 	InitiatePlayHelperServer(HMDEnabled, HMDOffset, HMDOrientation);
 }
 
+void AABPlayerController::InitiateHMD()
+{
+	ConsoleCommand(TEXT("Stereo On"), true);
+	ConsoleCommand(TEXT("r.setres 1280x720"), true);
+	ConsoleCommand(TEXT("sg.ResolutionQuality 100"), true);
+	//Reduce TAA blur
+	ConsoleCommand(TEXT("r.temporalAAsamples 1"), true);
+	ConsoleCommand(TEXT("r.temporalAAsharpness 1"), true);
+}
+
 void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
 	FTransform SpawnTransform;
@@ -56,6 +66,7 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 	}
 
 	Possess(Character);
+	InitiateHMD();
 }
 
 bool AABPlayerController::InitiatePlayHelperServer_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
