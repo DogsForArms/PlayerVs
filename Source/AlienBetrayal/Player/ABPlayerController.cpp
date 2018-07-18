@@ -25,12 +25,18 @@ void AABPlayerController::InitiatePlay_Implementation()
 
 void AABPlayerController::InitiateHMD()
 {
-	ConsoleCommand(TEXT("Stereo On"), true);
-	ConsoleCommand(TEXT("r.setres 1280x720"), true);
-	ConsoleCommand(TEXT("sg.ResolutionQuality 100"), true);
-	//Reduce TAA blur
-	ConsoleCommand(TEXT("r.temporalAAsamples 1"), true);
-	ConsoleCommand(TEXT("r.temporalAAsharpness 1"), true);
+	FString Commands[] = { 
+		TEXT("vr.bEnableStereo 1"), 
+		TEXT("r.setres 1280x720"),
+		TEXT("sg.ResolutionQuality 100" ),
+		TEXT("r.temporalAAsamples 1"),
+		TEXT("r.temporalAAsharpness 1")
+	};
+
+	for (const FString &Cmd : Commands)
+	{
+		ConsoleCommand(Cmd, true);
+	}
 }
 
 void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
@@ -39,9 +45,11 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 
 	TArray<AActor*> Spawns;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);
-	if (!Spawns.Num()) {
+	if (!Spawns.Num()) 
+	{
 		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
-	} else {
+	} else
+	{
 		int PlayerStartIndex = FMath::FRandRange(0, Spawns.Num() - 1);
 		AActor *Spawn = Spawns[PlayerStartIndex];
 		SpawnTransform = Spawn->GetActorTransform();
