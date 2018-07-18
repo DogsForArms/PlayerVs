@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "VRCharacter.h"
 #include "ABCharacter.generated.h"
-
 /**
  * 
  */
 class UGripMotionControllerComponent;
 class UVOIPTalker;
+class UWidgetInteractionComponent;
 
 UCLASS()
 class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
@@ -32,8 +32,18 @@ class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
 	UPROPERTY()
 	USphereComponent* RightHandGrabArea;
 
-	UPROPERTY(EditAnywhere, Category = "Grip")
+	UPROPERTY(EditAnywhere, Category = "Interaction")
+	UWidgetInteractionComponent* WidgetInteractionLeft;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction")
+	UWidgetInteractionComponent* WidgetInteractionRight;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
+
+	virtual void Tick(float DeltaTime) override;
+
+	void UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction);
 
 public:
 	// Voice Debugging (must be done in standalone).  bDrdopVoice will put your voice on the ground to test spacialization.
@@ -54,6 +64,9 @@ public:
 
 	UFUNCTION()
 	void GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand);
+
+	UFUNCTION()
+	bool UseWidget(UGripMotionControllerComponent* Hand, bool bClick);
 
 	UFUNCTION()
 	void CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
@@ -78,8 +91,11 @@ public:
 	void TryDropAll(EControllerHand EHand);
 
 	void UseLeft();
+	void StopUseLeft();
 	void UseRight();
-	void ClientUse(UGripMotionControllerComponent* Hand);
+	void StopUseRight();
+
+	void ClientUse(UGripMotionControllerComponent* Hand, bool bPressed);
 
 	void MoveForwardRH(float Value);
 	void MoveRightRH(float Value);

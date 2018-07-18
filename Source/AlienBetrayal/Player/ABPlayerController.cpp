@@ -29,6 +29,7 @@ void AABPlayerController::InitiateHMD()
 		TEXT("vr.bEnableStereo 1"), 
 		TEXT("r.setres 1280x720"),
 		TEXT("sg.ResolutionQuality 100" ),
+		// reduce TAA blur
 		TEXT("r.temporalAAsamples 1"),
 		TEXT("r.temporalAAsharpness 1")
 	};
