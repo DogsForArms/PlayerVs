@@ -9,6 +9,7 @@
 #include "VoiceConfig.h"
 #include "Online/SteamHandler.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/WidgetInteractionComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -17,6 +18,12 @@ AABCharacter::AABCharacter()
 {
 	GripTraceLength = 1.f;
 	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
+	WidgetInteractionLeft = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteractionLeft");
+	WidgetInteractionLeft->SetupAttachment(LeftMotionController);
+	WidgetInteractionRight = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteractionRight");
+	WidgetInteractionRight->SetupAttachment(RightMotionController);
+
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
@@ -41,6 +48,29 @@ void AABCharacter::SetupTalker()
 	if (PlayerController)
 	{
 		PlayerController->ToggleSpeaking(true);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Tick
+
+
+void AABCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	UpdateWidgetInteraction(WidgetInteractionLeft);
+	UpdateWidgetInteraction(WidgetInteractionRight);
+}
+
+void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction)
+{
+	if (WidgetInteraction->IsOverInteractableWidget())
+	{
+		WidgetInteraction->bShowDebug = true;
+	}
+	else
+	{
+		WidgetInteraction->bShowDebug = false;
 	}
 }
 
@@ -77,7 +107,10 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction("GrabRight", IE_Pressed, this, &AABCharacter::GrabRight);
 
 	PlayerInputComponent->BindAction("UseLeft", IE_Pressed, this, &AABCharacter::UseLeft);
+	PlayerInputComponent->BindAction("UseLeft", IE_Released, this, &AABCharacter::StopUseLeft);
+
 	PlayerInputComponent->BindAction("UseRight", IE_Pressed, this, &AABCharacter::UseRight);
+	PlayerInputComponent->BindAction("UseRight", IE_Released, this, &AABCharacter::StopUseRight);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,7 +131,6 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	EControllerHand HandType;
 	Hand->GetHandType(HandType);
 
-	UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | %s"), *Hand->GetName());
 	if (Hand->HasGrippedObjects())
 	{
 		CallCorrectDropEvent(Hand);
@@ -221,6 +253,26 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	}
 }
 
+bool AABCharacter::UseWidget(UGripMotionControllerComponent* Hand, bool bClick)
+{
+	bool Return = false;
+	UWidgetInteractionComponent* InteractionComponent = Hand == LeftMotionController ? WidgetInteractionLeft : WidgetInteractionRight;
+	if (InteractionComponent->IsOverInteractableWidget())
+	{
+		if (bClick)
+		{
+			InteractionComponent->PressPointerKey(EKeys::LeftMouseButton);
+		}
+		else
+		{
+			InteractionComponent->ReleasePointerKey(EKeys::LeftMouseButton);
+		}
+		Return = true;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("UseWidget -> %d"), Return)
+	return Return;
+}
+
 void AABCharacter::CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
 {
 	if (IsLocalGripOrDropEvent(ObjectToGrip)) 
@@ -330,16 +382,28 @@ bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
 
 void AABCharacter::UseLeft()
 {
-	ClientUse(LeftMotionController);
+	ClientUse(LeftMotionController, true);
 }
 
 void AABCharacter::UseRight()
 {
-	ClientUse(RightMotionController);
+	ClientUse(RightMotionController, true);
 }
 
-void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand)
+void AABCharacter::StopUseLeft()
 {
+	ClientUse(LeftMotionController, false);
+}
+
+void AABCharacter::StopUseRight()
+{
+	ClientUse(RightMotionController, false);
+}
+
+void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand, bool bPressed)
+{
+	if (UseWidget(Hand, bPressed) || !bPressed) return; 
+
 	TArray<UObject*> GrippedObjects;
 	Hand->GetGrippedObjects(GrippedObjects);
 	for (UObject* GrippedObject : GrippedObjects)
@@ -449,7 +513,7 @@ UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand E
 
 bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 {
-	EGripMovementReplicationSettings GripRepType;
+	EGripMovementReplicationSettings GripRepType = EGripMovementReplicationSettings::KeepOriginalMovement;
 	IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(ObjectToGrip);
 	if (GrippableComponent)
 	{

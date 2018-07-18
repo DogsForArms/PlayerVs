@@ -30,9 +30,12 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 public: 
 	AABPlayerController();
 
-	UFUNCTION(Reliable, Client)
+	UFUNCTION(Reliable, Client, BlueprintCallable)
 	void InitiatePlay();
 	void InitiatePlay_Implementation();
+
+	UFUNCTION()
+	void InitiateHMD();
 
 	UFUNCTION(Reliable, Server, WithValidation)
 	void InitiatePlayHelperServer(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);

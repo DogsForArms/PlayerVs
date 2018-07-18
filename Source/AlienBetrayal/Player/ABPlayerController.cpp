@@ -23,15 +23,32 @@ void AABPlayerController::InitiatePlay_Implementation()
 	InitiatePlayHelperServer(HMDEnabled, HMDOffset, HMDOrientation);
 }
 
+void AABPlayerController::InitiateHMD()
+{
+	FString Commands[] = { 
+		TEXT("vr.bEnableStereo 1"), 
+		TEXT("r.setres 1280x720"),
+		TEXT("sg.ResolutionQuality 100" ),
+		// reduce TAA blur
+		TEXT("r.temporalAAsamples 1"),
+		TEXT("r.temporalAAsharpness 1")
+	};
+
+	for (const FString &Cmd : Commands)
+		ConsoleCommand(Cmd, true);
+}
+
 void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
 	FTransform SpawnTransform;
 
 	TArray<AActor*> Spawns;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);
-	if (!Spawns.Num()) {
+	if (!Spawns.Num()) 
+	{
 		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
-	} else {
+	} else
+	{
 		int PlayerStartIndex = FMath::FRandRange(0, Spawns.Num() - 1);
 		AActor *Spawn = Spawns[PlayerStartIndex];
 		SpawnTransform = Spawn->GetActorTransform();
@@ -41,12 +58,12 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 	AABCharacter *Character;
 	if (!HMDEnabled && FPSCharacterTemplate)
 	{
-		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnInfo);
+		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnTransform, SpawnInfo);
 		UE_LOG(LogTemp, Warning, TEXT("Spawn FPSCharacterTemplate"))
 	}
 	else if (VRCharacterTemplate)
 	{
-		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnInfo);
+		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnTransform, SpawnInfo);
 		UE_LOG(LogTemp, Warning, TEXT("Spawn VRCharacterTemplate"))
 	} 
 	else
@@ -56,6 +73,7 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 	}
 
 	Possess(Character);
+	InitiateHMD();
 }
 
 bool AABPlayerController::InitiatePlayHelperServer_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
