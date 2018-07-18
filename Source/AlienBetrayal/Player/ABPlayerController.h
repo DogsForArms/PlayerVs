@@ -30,7 +30,7 @@ class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
 public: 
 	AABPlayerController();
 
-	UFUNCTION(Reliable, Client)
+	UFUNCTION(Reliable, Client, BlueprintCallable)
 	void InitiatePlay();
 	void InitiatePlay_Implementation();
 

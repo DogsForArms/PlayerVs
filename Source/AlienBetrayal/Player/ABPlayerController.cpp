@@ -41,12 +41,12 @@ void AABPlayerController::InitiatePlayHelperServer_Implementation(bool HMDEnable
 	AABCharacter *Character;
 	if (!HMDEnabled && FPSCharacterTemplate)
 	{
-		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnInfo);
+		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnTransform, SpawnInfo);
 		UE_LOG(LogTemp, Warning, TEXT("Spawn FPSCharacterTemplate"))
 	}
 	else if (VRCharacterTemplate)
 	{
-		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnInfo);
+		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnTransform, SpawnInfo);
 		UE_LOG(LogTemp, Warning, TEXT("Spawn VRCharacterTemplate"))
 	} 
 	else
