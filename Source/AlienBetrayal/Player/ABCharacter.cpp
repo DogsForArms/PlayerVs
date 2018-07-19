@@ -54,7 +54,6 @@ void AABCharacter::SetupTalker()
 //////////////////////////////////////////////////////////////////////////
 // Tick
 
-
 void AABCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -64,7 +63,7 @@ void AABCharacter::Tick(float DeltaTime)
 
 void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction)
 {
-	if (WidgetInteraction->IsOverInteractableWidget())
+	if (WidgetInteraction->IsOverFocusableWidget())
 	{
 		WidgetInteraction->bShowDebug = true;
 	}

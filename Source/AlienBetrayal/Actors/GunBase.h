@@ -33,7 +33,7 @@ class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
 	TSubclassOf<ABulletBase> BulletTemplate;
 
 	UPROPERTY(EditAnywhere, Category = "Bullet")
-	float BulletVelocity = 700;
+	float BulletVelocity = 15000;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 	UArrowComponent* Muzzle;
