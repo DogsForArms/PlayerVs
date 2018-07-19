@@ -12,7 +12,7 @@
  * 
  */
 UCLASS()
-class ALIENBETRAYAL_API UPlayerWidget : public UUserWidget
+class PLAYERVS_API UPlayerWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	

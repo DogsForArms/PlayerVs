@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "AlienBetrayal.h"
+#include "PlayerVs.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, AlienBetrayal, "AlienBetrayal" );
+IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, PlayerVs, "PlayerVs" );

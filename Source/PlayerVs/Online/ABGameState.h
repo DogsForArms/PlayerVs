@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class ALIENBETRAYAL_API AABGameState : public AGameState
+class PLAYERVS_API AABGameState : public AGameState
 {
 	GENERATED_BODY()
 	

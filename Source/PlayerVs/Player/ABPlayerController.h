@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class ALIENBETRAYAL_API AABPlayerController : public AVRPlayerController
+class PLAYERVS_API AABPlayerController : public AVRPlayerController
 {
 	GENERATED_BODY()
 

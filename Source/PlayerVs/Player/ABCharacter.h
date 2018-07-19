@@ -13,7 +13,7 @@ class UVOIPTalker;
 class UWidgetInteractionComponent;
 
 UCLASS()
-class ALIENBETRAYAL_API AABCharacter : public AVRCharacter
+class PLAYERVS_API AABCharacter : public AVRCharacter
 {
 	GENERATED_BODY()
 

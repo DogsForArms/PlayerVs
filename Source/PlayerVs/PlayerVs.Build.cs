@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class AlienBetrayal : ModuleRules
+public class PlayerVs : ModuleRules
 {
-	public AlienBetrayal(ReadOnlyTargetRules Target) : base(Target)
+	public PlayerVs(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 

@@ -11,7 +11,7 @@ class USphereComponent;
 class UAudioComponent;
 
 UCLASS()
-class ALIENBETRAYAL_API ABulletBase : public AActor
+class PLAYERVS_API ABulletBase : public AActor
 {
 	GENERATED_BODY()
 

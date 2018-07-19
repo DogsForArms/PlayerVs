@@ -7,7 +7,7 @@
 #include "SteamHandler.generated.h"
 
 UCLASS()
-class ALIENBETRAYAL_API ASteamHandler : public AActor
+class PLAYERVS_API ASteamHandler : public AActor
 {
 	GENERATED_BODY()
 	
