@@ -14,7 +14,7 @@ class UArrowComponent;
 class UAudioComponent;
 
 UCLASS()
-class ALIENBETRAYAL_API AGunBase : public AGrippableStaticMeshActor
+class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
 {
 	GENERATED_BODY()
 

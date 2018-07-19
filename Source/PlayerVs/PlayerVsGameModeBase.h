@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "AlienBetrayalGameModeBase.generated.h"
+#include "PlayerVsGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ALIENBETRAYAL_API AAlienBetrayalGameModeBase : public AGameModeBase
+class PLAYERVS_API APlayerVsGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	

@@ -9,7 +9,7 @@
 class AABGameState;
 
 UCLASS()
-class ALIENBETRAYAL_API AABGameMode : public AGameMode
+class PLAYERVS_API AABGameMode : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
 

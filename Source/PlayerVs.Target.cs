@@ -3,12 +3,12 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class AlienBetrayalTarget : TargetRules
+public class PlayerVsTarget : TargetRules
 {
-	public AlienBetrayalTarget(TargetInfo Target) : base(Target)
+	public PlayerVsTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
         bUsesSteam = true;
-		ExtraModuleNames.AddRange( new string[] { "AlienBetrayal" } );
+		ExtraModuleNames.AddRange( new string[] { "PlayerVs" } );
 	}
 }
