@@ -12,6 +12,39 @@ class UGripMotionControllerComponent;
 class UVOIPTalker;
 class UWidgetInteractionComponent;
 
+USTRUCT()
+struct FGrabScanResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName BoneName;
+
+	UPROPERTY()
+	FVector ImpactPoint;
+
+	UPROPERTY()
+	UObject* ObjectToGrip;
+
+	UPROPERTY()
+	FTransform ObjectTransform;
+
+	UPROPERTY()
+	AActor* Actor;
+
+	UPROPERTY()
+	UPrimitiveComponent* Component;
+
+	FGrabScanResult()
+	{
+		BoneName = FName("None");
+		ImpactPoint = FVector::ZeroVector;
+		ObjectToGrip = NULL;
+		Actor = NULL;
+		Component = NULL;
+	}
+};
+
 UCLASS()
 class PLAYERVS_API AABCharacter : public AVRCharacter
 {
@@ -62,6 +95,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GrabRight();
 
+	UFUNCTION()
+	bool GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphereComponent* GrabArea);
+	
 	UFUNCTION()
 	void GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand);
 
