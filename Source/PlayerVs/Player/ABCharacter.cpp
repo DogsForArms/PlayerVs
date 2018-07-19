@@ -125,6 +125,76 @@ void AABCharacter::GrabRight()
 	GripDropOrUseObject(RightMotionController, RightHandGrabArea, LeftMotionController);
 }
 
+bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphereComponent* GrabArea)
+{
+	TMap<UPrimitiveComponent*, bool> Used;
+
+	TArray<FHitResult> OutHits;
+	FCollisionQueryParams TraceParams;
+	TraceParams.bTraceComplex = true;
+	TraceParams.AddIgnoredActor(this);
+
+	ECollisionChannel TraceChannel = ECC_WorldDynamic;
+	float Radius = GrabArea->GetScaledSphereRadius();
+	FVector Start = GrabArea->GetComponentLocation();
+	FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
+	DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
+	bool ObjectFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
+	UE_LOG(LogTemp, Warning, TEXT("SweepMultiByObjectType %d"), ObjectFound)
+
+	for (FHitResult Hit : OutHits)
+	{
+		FGrabScanResult Result;
+		Result.BoneName = Hit.BoneName;
+		Result.ImpactPoint = Hit.ImpactPoint;
+		Result.Component = Hit.GetComponent();
+		Result.Actor = Hit.GetActor();
+		Used.Add(Hit.GetComponent(), true);
+		OutResults.Add(Result);
+	}
+	
+	TArray<FOverlapResult> OutOverlaps;
+	FComponentQueryParams OverlapParams;
+	OverlapParams.bTraceComplex = true;
+	OverlapParams.AddIgnoredActor(this);
+	ObjectFound = GetWorld()->ComponentOverlapMulti(OutOverlaps, GrabArea, GrabArea->GetComponentLocation(), GrabArea->GetComponentRotation(), OverlapParams);
+	UE_LOG(LogTemp, Warning, TEXT("ComponentOverlapMulti %d"), ObjectFound)
+
+	for (FOverlapResult Overlap : OutOverlaps)
+	{
+		if (!Used.Contains(Overlap.GetComponent()))
+		{
+			FGrabScanResult Result;
+			Result.ImpactPoint = Overlap.GetComponent()->GetComponentLocation();
+			Result.Component = Overlap.GetComponent();
+			Result.Actor = Overlap.GetActor();
+			OutResults.Add(Result);
+		}
+	}
+
+	for (FGrabScanResult &Result : OutResults)
+	{
+		IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Result.Component);
+		IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Result.Actor);
+		UE_LOG(LogTemp, Warning, TEXT("GripResultScan %s"), *Result.Actor->GetName())
+
+		if (GrippableComponent)
+		{
+			Result.ObjectToGrip = Result.Component;
+			Result.ObjectTransform = Result.Component->GetComponentTransform();
+		}
+		else
+		{
+			Result.ObjectToGrip = Result.Actor;
+			Result.ObjectTransform = Result.Actor->GetActorTransform();
+		}
+	}
+
+	bool bHasResults = OutResults.Num() > 0;
+	UE_LOG(LogTemp, Warning, TEXT("bHasResults %d"), bHasResults)
+	return bHasResults;
+}
+
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
 {
 	EControllerHand HandType;
@@ -136,113 +206,62 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 	}
 	else
 	{
-		TArray<FHitResult> OutHits;
-		FCollisionQueryParams TraceParams;
-		TraceParams.bTraceComplex = true;
-		TraceParams.AddIgnoredActor(this);
-
-		ECollisionChannel TraceChannel = ECC_WorldDynamic;
-		float Radius = GrabArea->GetScaledSphereRadius();
-		FVector Start = GrabArea->GetComponentLocation();
-		FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
-		DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
-		bool ObjectFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
-		UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | SweepMultiByObjectType %d"), ObjectFound)
-		
-		//Variables to be initialized by Sweep and Overlap
-		AActor* Actor = NULL;
-		UPrimitiveComponent* Component = NULL;
-		FName BoneName = FName("None");
-		FVector ImpactPoint;
-
-		// Sweep and Overlap for the above varibales
-		if (ObjectFound)
+		TArray<FGrabScanResult> ScanResults;
+		if (GetGrabScanResults(ScanResults, GrabArea))
 		{
-			//Todo, if multiple items -- determine priority.
-			FHitResult Hit = OutHits[0];
-			Component = Hit.GetComponent();
-			Actor = Hit.GetActor();
-			BoneName = Hit.BoneName;
-			ImpactPoint = Hit.ImpactPoint;
-		}
-		else
-		{//Try ComponentOverlapMulti
-			TArray<FOverlapResult> OutOverlaps;
-			FComponentQueryParams OverlapParams;
-			OverlapParams.bTraceComplex = true;
-			OverlapParams.AddIgnoredActor(this);
-			ObjectFound = GetWorld()->ComponentOverlapMulti(OutOverlaps, GrabArea, GrabArea->GetComponentLocation(), GrabArea->GetComponentRotation(), OverlapParams);
-			if (ObjectFound)
+			for (FGrabScanResult &ScanResult : ScanResults)
 			{
-				FOverlapResult Overlap = OutOverlaps[0];
-				Component = Overlap.Component.Get();
-				Actor = Overlap.Actor.Get();
-				ImpactPoint = Component->GetComponentLocation();
-			}
-			
-			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | ComponentOverlapMulti %d"), ObjectFound)
-		}
+				IVRGripInterface* Grippable = Cast<IVRGripInterface>(ScanResult.ObjectToGrip);
 
-		if (ObjectFound)
-		{
-			IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Component);
-			IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Actor);
-			IVRGripInterface* Grippable = NULL;
-			UObject* ObjectToGrip = NULL;
-			FTransform ObjectTransform;
+				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Found object to grab..."));
 
-			if (GrippableComponent)
-			{
-				Grippable = GrippableComponent;
-				ObjectToGrip = Component;
-				ObjectTransform = Component->GetComponentTransform();
-			}
-			else
-			{
-				Grippable = GrippableActor;
-				ObjectToGrip = Actor;
-				ObjectTransform = Actor->GetActorTransform();
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Found object to grab..."));
-			
-			if (Grippable && !Grippable->Execute_DenyGripping(ObjectToGrip))
-			{
-				bool OutHadSlotInRange;
-				FTransform OutSlotTransform;
-				Grippable->Execute_ClosestGripSlotInRange(ObjectToGrip, ImpactPoint, false, OutHadSlotInRange, OutSlotTransform, Hand, GetPrimarySlotPrefix(ObjectToGrip, Hand));
-
-				FTransform RelativeObjectTransform = ObjectTransform.GetRelativeTransform(OutSlotTransform);
-				FTransform GripTransform;
-				if (Hand->bOffsetByControllerProfile)
+				if (Grippable && !Grippable->Execute_DenyGripping(ScanResult.ObjectToGrip))
 				{
-					GripTransform = RelativeObjectTransform;
+					bool OutHadSlotInRange;
+					FTransform OutSlotTransform;
+					Grippable->Execute_ClosestGripSlotInRange(
+						ScanResult.ObjectToGrip,
+						ScanResult.ImpactPoint,
+						false,
+						OutHadSlotInRange,
+						OutSlotTransform,
+						Hand,
+						GetPrimarySlotPrefix(ScanResult.ObjectToGrip, Hand));
+
+					FTransform RelativeObjectTransform = ScanResult.ObjectTransform.GetRelativeTransform(OutSlotTransform);
+					FTransform GripTransform;
+					if (Hand->bOffsetByControllerProfile)
+					{
+						GripTransform = RelativeObjectTransform;
+					}
+					else
+					{
+						GripTransform = UVRGlobalSettings::AdjustTransformByControllerProfile(FName("None"), RelativeObjectTransform, HandType == EControllerHand::Right);
+					}
+
+					if (!OutHadSlotInRange)
+					{
+						GripTransform = GetHandRelativeTransformOfBoneOrObject(Hand, ScanResult.ObjectToGrip, ScanResult.ObjectTransform, ScanResult.BoneName);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
+					}
+					CallCorrectGrabEvent(HandType, ScanResult.ObjectToGrip, GripTransform, ScanResult.BoneName, false);
+					break;
+				}
+				else if (ScanResult.Component->IsSimulatingPhysics(ScanResult.BoneName))
+				{
+					//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
+					UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
+					FTransform Transform = GetHandRelativeTransformOfBoneOrObject(Hand, ScanResult.ObjectToGrip, ScanResult.ObjectTransform, ScanResult.BoneName);
+					CallCorrectGrabEvent(HandType, ScanResult.ObjectToGrip, Transform, ScanResult.BoneName, false);
+					break;
 				}
 				else
 				{
-					GripTransform = UVRGlobalSettings::AdjustTransformByControllerProfile(FName("None"), RelativeObjectTransform, HandType == EControllerHand::Right);
+					UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Object is not moveable"));
 				}
-
-				if (!OutHadSlotInRange)
-				{
-					GripTransform = GetHandRelativeTransformOfBoneOrObject(Hand, ObjectToGrip, ObjectTransform, BoneName);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
-				}
-				CallCorrectGrabEvent(HandType, ObjectToGrip, GripTransform, BoneName, false);
-			}
-			else if (Component->IsSimulatingPhysics(BoneName))
-			{
-				//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
-				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
-				FTransform Transform = GetHandRelativeTransformOfBoneOrObject(Hand, ObjectToGrip, ObjectTransform, BoneName);
-				CallCorrectGrabEvent(HandType, ObjectToGrip, Transform, BoneName, false);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Object is not moveable"));
 			}
 		}
 		else
