@@ -287,7 +287,6 @@ bool AABCharacter::UseWidget(UGripMotionControllerComponent* Hand, bool bClick)
 		}
 		Return = true;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("UseWidget -> %d"), Return)
 	return Return;
 }
 
