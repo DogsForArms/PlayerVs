@@ -48,9 +48,11 @@ public:
 	bool bCanBeFired;
 	bool bWasSocketed;
 
-	UFUNCTION(Unreliable, Client)
-	void PlayGunEffects(bool bForce);
-	void PlayGunEffects_Implementation(bool bForce);
+	UFUNCTION(Unreliable, NetMulticast)
+	void MulticastPlayGunEffects();
+	void MulticastPlayGunEffects_Implementation();
+
+	void PlayGunEffects();
 
 private:
 

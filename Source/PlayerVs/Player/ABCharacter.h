@@ -66,12 +66,6 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 	USphereComponent* RightHandGrabArea;
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
-	UWidgetInteractionComponent* WidgetInteractionLeft;
-
-	UPROPERTY(EditAnywhere, Category = "Interaction")
-	UWidgetInteractionComponent* WidgetInteractionRight;
-
-	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
 
 	virtual void Tick(float DeltaTime) override;
@@ -85,6 +79,11 @@ public:
 	void DebugVoice(bool bDropVoice, bool bLoopback);
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	UWidgetInteractionComponent* WidgetInteractionLeft;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	UWidgetInteractionComponent* WidgetInteractionRight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Voice")
 	UVOIPTalker* Talker;
