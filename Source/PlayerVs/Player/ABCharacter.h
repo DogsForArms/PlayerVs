@@ -86,7 +86,7 @@ public:
 
 public:
 
-	UPROPERTY(EditAnywhere, Category = "Voice")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Voice")
 	UVOIPTalker* Talker;
 
 	UFUNCTION(BlueprintCallable)
