@@ -54,13 +54,13 @@ void AGunBase::OnUsed_Implementation()
 
 	ServerFireGun(Location, Forward);
 	//TODO how to replicate to all clients except me.
-	PlayGunEffects(true);
+	PlayGunEffects();
 }
 
 void AGunBase::OnEndUsed_Implementation()
 {
 	Super::OnEndUsed_Implementation();
-	UE_LOG(LogTemp, Warning, TEXT("OnEndUsed_Implementation PEW PEW"))
+	UE_LOG(LogTemp, Warning, TEXT("Gun OnEndUsed_Implementation PEW PEW"))
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -82,6 +82,7 @@ void AGunBase::ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeN
 		Bullet->SetOwner(this);
 		Bullet->InitializeBullet(BulletVelocity, this);
 		UGameplayStatics::FinishSpawningActor(Bullet, SpawnTM);
+		MulticastPlayGunEffects();
 	}
 }
 
@@ -90,8 +91,16 @@ bool AGunBase::ServerFireGun_Validate(FVector Origin, FVector_NetQuantizeNormal 
 	return true;
 }
 
-void AGunBase::PlayGunEffects_Implementation(bool bForce)
+void AGunBase::MulticastPlayGunEffects_Implementation()
 {
-	if (!bForce /*&& !GunIsLocallyControlled*/) { return; }
+	APlayerController *OwningController = GetNetOwningPlayer()->GetPlayerController(GetWorld());
+	if (OwningController && !OwningController->IsLocalController()) {
+		return;
+	}
+	PlayGunEffects();
+}
+
+void AGunBase::PlayGunEffects()
+{
 	GunfireAudio->Play();
 }

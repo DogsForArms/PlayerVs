@@ -316,18 +316,18 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 		OtherHand->DropObject(ObjectToGrip, true);
 	}
 
-	bool bInterfaceGrab = Hand->GripObjectByInterface(
+	bool bGripOccured = Hand->GripObjectByInterface(
 		ObjectToGrip,
 		Transform,
 		true,
 		BoneName,
 		bIsSlotGrip
 	);
-	UE_LOG(LogTemp, Warning, TEXT("Object is interface grab %d"), bInterfaceGrab)
-	if (!bInterfaceGrab)
+	UE_LOG(LogTemp, Warning, TEXT("Object is interface grab %d"), bGripOccured)
+	if (!bGripOccured)
 	{
 		//Bla de bla, TODO logic for switching hands.
-		Hand->GripObject(
+		bGripOccured = Hand->GripObject(
 			ObjectToGrip,
 			Transform,
 			true, //Transform is relative
