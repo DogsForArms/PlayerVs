@@ -49,8 +49,7 @@ UVRBaseCharacterMovementComponent::UVRBaseCharacterMovementComponent(const FObje
 
 	VRReplicatedMovementMode = EVRConjoinedMovementModes::C_MOVE_MAX;
 
-	NetworkSmoothingMode = ENetworkSmoothingMode::Disabled;
-	NetworkSimulatedSmoothRotationTime = 0.0f; // Don't smooth rotation, its not good
+	NetworkSmoothingMode = ENetworkSmoothingMode::Disabled;//Exponential;
 
 	bWasInPushBack = false;
 	bIsInPushBack = false;
@@ -819,11 +818,6 @@ void UVRBaseCharacterMovementComponent::SetReplicatedMovementMode(EVRConjoinedMo
 	VRReplicatedMovementMode = NewMovementMode;
 }
 
-/*void UVRBaseCharacterMovementComponent::ReplicateMoveToServer(float DeltaTime, const FVector& NewAcceleration)
-{
-	Super::ReplicateMoveToServer(DeltaTime, NewAcceleration);
-}*/
-
 /*void UVRBaseCharacterMovementComponent::SendClientAdjustment()
 {
 	if (!HasValidData())
@@ -1035,6 +1029,37 @@ void FSavedMove_VRBaseCharacter::SetInitialPosition(ACharacter* C)
 	FSavedMove_Character::SetInitialPosition(C);
 }
 
+void FSavedMove_VRBaseCharacter::CombineWith(const FSavedMove_Character* OldMove, ACharacter* InCharacter, APlayerController* PC, const FVector& OldStartLocation)
+{
+	UCharacterMovementComponent* CharMovement = InCharacter->GetCharacterMovement();
+	
+	// to combine move, first revert pawn position to PendingMove start position, before playing combined move on client
+	CharMovement->UpdatedComponent->SetWorldLocationAndRotation(OldStartLocation, OldMove->StartRotation, false, nullptr, CharMovement->GetTeleportType());
+	CharMovement->Velocity = OldMove->StartVelocity;
+
+	CharMovement->SetBase(OldMove->StartBase.Get(), OldMove->StartBoneName);
+	CharMovement->CurrentFloor = OldMove->StartFloor;
+
+	// Now that we have reverted to the old position, prepare a new move from that position,
+	// using our current velocity, acceleration, and rotation, but applied over the combined time from the old and new move.
+
+	// Combine times for both moves
+	DeltaTime += OldMove->DeltaTime;
+
+	//FSavedMove_VRBaseCharacter * BaseSavedMove = (FSavedMove_VRBaseCharacter *)NewMove.Get();
+	FSavedMove_VRBaseCharacter * BaseSavedMovePending = (FSavedMove_VRBaseCharacter *)OldMove;
+
+	if (/*BaseSavedMove && */BaseSavedMovePending)
+	{
+		LFDiff.X += BaseSavedMovePending->LFDiff.X;
+		LFDiff.Y += BaseSavedMovePending->LFDiff.Y;
+	}
+
+	// Roll back jump force counters. SetInitialPosition() below will copy them to the saved move.
+	// Changes in certain counters like JumpCurrentCount don't allow move combining, so no need to roll those back (they are the same).
+	InCharacter->JumpForceTimeRemaining = OldMove->JumpForceTimeRemaining;
+	InCharacter->JumpKeyHoldTime = OldMove->JumpKeyHoldTime;
+}
 
 void FSavedMove_VRBaseCharacter::PostUpdate(ACharacter* C, EPostUpdateMode PostUpdateMode)
 {
@@ -1114,6 +1139,162 @@ void FSavedMove_VRBaseCharacter::PrepMoveFor(ACharacter* Character)
 	FSavedMove_Character::PrepMoveFor(Character);
 }
 
+void UVRBaseCharacterMovementComponent::SmoothCorrection(const FVector& OldLocation, const FQuat& OldRotation, const FVector& NewLocation, const FQuat& NewRotation)
+{
+	//SCOPE_CYCLE_COUNTER(STAT_CharacterMovementSmoothCorrection);
+	if (!HasValidData())
+	{
+		return;
+	}
+
+	AVRBaseCharacter * Basechar = Cast<AVRBaseCharacter>(CharacterOwner);
+
+	if (!Basechar)
+		Super::SmoothCorrection(OldLocation, OldRotation, NewLocation, NewRotation);
+
+	// We shouldn't be running this on a server that is not a listen server.
+	checkSlow(GetNetMode() != NM_DedicatedServer);
+	checkSlow(GetNetMode() != NM_Standalone);
+
+	// Only client proxies or remote clients on a listen server should run this code.
+	const bool bIsSimulatedProxy = (CharacterOwner->Role == ROLE_SimulatedProxy);
+	const bool bIsRemoteAutoProxy = (CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy);
+	ensure(bIsSimulatedProxy || bIsRemoteAutoProxy);
+
+	// Skip smoothing in set situations
+	if (
+		NetworkSmoothingMode != ENetworkSmoothingMode::Disabled &&
+		NetworkSmoothingMode != ENetworkSmoothingMode::Replay &&
+		(!OldRotation.Equals(NewRotation, 1e-5f)/* || Velocity.IsNearlyZero()*/)
+		)
+	{
+		if (Basechar)
+		{
+			Basechar->NetSmoother->SetRelativeLocation(FVector::ZeroVector);
+		}
+		FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character();
+		if (ClientData)
+		{
+			ClientData->MeshTranslationOffset = FVector::ZeroVector;
+			ClientData->MeshRotationOffset = FQuat::Identity;
+		}
+		//UpdatedComponent->SetWorldRotation(NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
+		UpdatedComponent->SetWorldLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
+		bNetworkSmoothingComplete = true;
+		return;
+	}
+
+	// Getting a correction means new data, so smoothing needs to run.
+	bNetworkSmoothingComplete = false;
+
+	// Handle selected smoothing mode.
+	if (NetworkSmoothingMode == ENetworkSmoothingMode::Replay)
+	{
+		// Replays use pure interpolation in this mode, all of the work is done in SmoothClientPosition_Interpolate
+		return;
+	}
+	else if (NetworkSmoothingMode == ENetworkSmoothingMode::Disabled)
+	{
+		UpdatedComponent->SetWorldLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
+		bNetworkSmoothingComplete = true;
+	}
+	else if (FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character())
+	{
+		const UWorld* MyWorld = GetWorld();
+		if (!ensure(MyWorld != nullptr))
+		{
+			return;
+		}
+
+		// The mesh doesn't move, but the capsule does so we have a new offset.
+		FVector NewToOldVector = (OldLocation - NewLocation);
+		if (bIsNavWalkingOnServer && FMath::Abs(NewToOldVector.Z) < NavWalkingFloorDistTolerance)
+		{
+			// ignore smoothing on Z axis
+			// don't modify new location (local simulation result), since it's probably more accurate than server data
+			// and shouldn't matter as long as difference is relatively small
+			NewToOldVector.Z = 0;
+		}
+
+		const float DistSq = NewToOldVector.SizeSquared();
+		if (DistSq > FMath::Square(ClientData->MaxSmoothNetUpdateDist))
+		{
+			ClientData->MeshTranslationOffset = (DistSq > FMath::Square(ClientData->NoSmoothNetUpdateDist))
+				? FVector::ZeroVector
+				: ClientData->MeshTranslationOffset + ClientData->MaxSmoothNetUpdateDist * NewToOldVector.GetSafeNormal();
+		}
+		else
+		{
+			ClientData->MeshTranslationOffset = ClientData->MeshTranslationOffset + NewToOldVector;
+		}
+
+		//UE_LOG(LogCharacterNetSmoothing, Verbose, TEXT("Proxy %s SmoothCorrection(%.2f)"), *GetNameSafe(CharacterOwner), FMath::Sqrt(DistSq));
+		if (NetworkSmoothingMode == ENetworkSmoothingMode::Linear)
+		{
+			ClientData->OriginalMeshTranslationOffset = ClientData->MeshTranslationOffset;
+
+			// Remember the current and target rotation, we're going to lerp between them
+			ClientData->OriginalMeshRotationOffset = OldRotation;
+			ClientData->MeshRotationOffset = OldRotation;
+			ClientData->MeshRotationTarget = NewRotation;
+
+			// Move the capsule, but not the mesh.
+			// Note: we don't change rotation, we lerp towards it in SmoothClientPosition.
+			const FScopedPreventAttachedComponentMove PreventMeshMove(Basechar->NetSmoother);
+			UpdatedComponent->SetWorldLocation(NewLocation, false, nullptr, GetTeleportType());
+		}
+		else
+		{
+			// Calc rotation needed to keep current world rotation after UpdatedComponent moves.
+			// Take difference between where we were rotated before, and where we're going
+			ClientData->MeshRotationOffset = (NewRotation.Inverse() * OldRotation) * ClientData->MeshRotationOffset;
+			ClientData->MeshRotationTarget = FQuat::Identity;
+
+			const FScopedPreventAttachedComponentMove PreventMeshMove(Basechar->NetSmoother);
+			UpdatedComponent->SetWorldLocationAndRotation(NewLocation, NewRotation, false, nullptr, GetTeleportType());
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Update smoothing timestamps
+
+		// If running ahead, pull back slightly. This will cause the next delta to seem slightly longer, and cause us to lerp to it slightly slower.
+		if (ClientData->SmoothingClientTimeStamp > ClientData->SmoothingServerTimeStamp)
+		{
+			const double OldClientTimeStamp = ClientData->SmoothingClientTimeStamp;
+			ClientData->SmoothingClientTimeStamp = FMath::LerpStable(ClientData->SmoothingServerTimeStamp, OldClientTimeStamp, 0.5);
+
+			//UE_LOG(LogCharacterNetSmoothing, VeryVerbose, TEXT("SmoothCorrection: Pull back client from ClientTimeStamp: %.6f to %.6f, ServerTimeStamp: %.6f for %s"),
+			//	OldClientTimeStamp, ClientData->SmoothingClientTimeStamp, ClientData->SmoothingServerTimeStamp, *GetNameSafe(CharacterOwner));
+		}
+
+		// Using server timestamp lets us know how much time actually elapsed, regardless of packet lag variance.
+		double OldServerTimeStamp = ClientData->SmoothingServerTimeStamp;
+		ClientData->SmoothingServerTimeStamp = (bIsSimulatedProxy ? CharacterOwner->GetReplicatedServerLastTransformUpdateTimeStamp() : ServerLastTransformUpdateTimeStamp);
+
+		// Initial update has no delta.
+		if (ClientData->LastCorrectionTime == 0)
+		{
+			ClientData->SmoothingClientTimeStamp = ClientData->SmoothingServerTimeStamp;
+			OldServerTimeStamp = ClientData->SmoothingServerTimeStamp;
+		}
+
+		// Don't let the client fall too far behind or run ahead of new server time.
+		const double ServerDeltaTime = ClientData->SmoothingServerTimeStamp - OldServerTimeStamp;
+		const double MaxDelta = FMath::Clamp(ServerDeltaTime * 1.25, 0.0, ClientData->MaxMoveDeltaTime * 2.0);
+		ClientData->SmoothingClientTimeStamp = FMath::Clamp(ClientData->SmoothingClientTimeStamp, ClientData->SmoothingServerTimeStamp - MaxDelta, ClientData->SmoothingServerTimeStamp);
+
+		// Compute actual delta between new server timestamp and client simulation.
+		ClientData->LastCorrectionDelta = ClientData->SmoothingServerTimeStamp - ClientData->SmoothingClientTimeStamp;
+		ClientData->LastCorrectionTime = MyWorld->GetTimeSeconds();
+
+		//UE_LOG(LogCharacterNetSmoothing, VeryVerbose, TEXT("SmoothCorrection: WorldTime: %.6f, ServerTimeStamp: %.6f, ClientTimeStamp: %.6f, Delta: %.6f for %s"),
+		//MyWorld->GetTimeSeconds(), ClientData->SmoothingServerTimeStamp, ClientData->SmoothingClientTimeStamp, ClientData->LastCorrectionDelta, *GetNameSafe(CharacterOwner));
+		/*
+		Visualize network smoothing was here, removed it
+		*/
+	}
+}
+
 void UVRBaseCharacterMovementComponent::SmoothClientPosition(float DeltaSeconds)
 {
 	if (!HasValidData() || NetworkSmoothingMode == ENetworkSmoothingMode::Disabled)
@@ -1133,13 +1314,8 @@ void UVRBaseCharacterMovementComponent::SmoothClientPosition(float DeltaSeconds)
 		return;
 	}
 
-	// #TODO: To fix smoothing perfectly I would need to override SimulatedTick which isn't virtual so I also would need to
-	// override TickComponent all the way back to base character movement comp. Then I would need to use VR loc instead of actor loc
-	// for the smoothed location, and rotation likely wouldn't work period. Then there is the scoped prevent mesh move command which
-	// would need to be moved to the new smoothing component...... I am on the fence about whether supporting epics smoothing is worth it
-	// or if I should drop it and maybe run my own?
-
 	SmoothClientPosition_Interpolate(DeltaSeconds);
+
 	//SmoothClientPosition_UpdateVisuals(); No mesh, don't bother to run this
 	SmoothClientPosition_UpdateVRVisuals();
 }
@@ -1158,45 +1334,25 @@ void UVRBaseCharacterMovementComponent::SmoothClientPosition_UpdateVRVisuals()
 	{
 		if (NetworkSmoothingMode == ENetworkSmoothingMode::Linear)
 		{
-			// Adjust capsule rotation and mesh location. Optimized to trigger only one transform chain update.
-			// If we know the rotation is changing that will update children, so it's sufficient to set RelativeLocation directly on the mesh.
+			// Erased most of the code here, check back in later
 			const FVector NewRelLocation = ClientData->MeshRotationOffset.UnrotateVector(ClientData->MeshTranslationOffset) + CharacterOwner->GetBaseTranslationOffset();
-
-			if (!UpdatedComponent->GetComponentQuat().Equals(ClientData->MeshRotationOffset, SCENECOMPONENT_QUAT_TOLERANCE))
-			{
-				const FVector OldLocation = Basechar->NetSmoother->RelativeLocation;
-				const FRotator OldRotation = UpdatedComponent->RelativeRotation;
-				Basechar->NetSmoother->RelativeLocation = NewRelLocation;
-				//Mesh->RelativeLocation = NewRelLocation;
-			//	UpdatedComponent->SetWorldRotation(ClientData->MeshRotationOffset);
-
-				// If we did not move from SetWorldRotation, we need to at least call SetRelativeLocation since we were relying on the UpdatedComponent to update the transform of the mesh
-				//if (UpdatedComponent->RelativeRotation == OldRotation)
-				//{
-					Basechar->NetSmoother->RelativeLocation = OldLocation;
-					Basechar->NetSmoother->SetRelativeLocation(NewRelLocation);
-				//}
-			}
-			else
-			{
-				Basechar->NetSmoother->SetRelativeLocation(NewRelLocation);
-			}
+			Basechar->NetSmoother->SetRelativeLocation(NewRelLocation);
 		}
 		else if (NetworkSmoothingMode == ENetworkSmoothingMode::Exponential)
 		{
 			// Adjust mesh location and rotation
 			const FVector NewRelTranslation = UpdatedComponent->GetComponentToWorld().InverseTransformVectorNoScale(ClientData->MeshTranslationOffset) + CharacterOwner->GetBaseTranslationOffset();
 			const FQuat NewRelRotation = ClientData->MeshRotationOffset * CharacterOwner->GetBaseRotationOffset();
-			Basechar->NetSmoother->SetRelativeLocation(NewRelTranslation);
+			//Basechar->NetSmoother->SetRelativeLocation(NewRelTranslation);
 
-			//Basechar->NetSmoother->SetRelativeLocationAndRotation(NewRelTranslation, NewRelRotation);
+			Basechar->NetSmoother->SetRelativeLocationAndRotation(NewRelTranslation, NewRelRotation);
 		}
 		else if (NetworkSmoothingMode == ENetworkSmoothingMode::Replay)
 		{
 			if (!UpdatedComponent->GetComponentQuat().Equals(ClientData->MeshRotationOffset, SCENECOMPONENT_QUAT_TOLERANCE) || !UpdatedComponent->GetComponentLocation().Equals(ClientData->MeshTranslationOffset, KINDA_SMALL_NUMBER))
 			{
-				UpdatedComponent->SetWorldLocation(ClientData->MeshTranslationOffset);
-				//UpdatedComponent->SetWorldLocationAndRotation(ClientData->MeshTranslationOffset, ClientData->MeshRotationOffset);
+				//UpdatedComponent->SetWorldLocation(ClientData->MeshTranslationOffset);
+				UpdatedComponent->SetWorldLocationAndRotation(ClientData->MeshTranslationOffset, ClientData->MeshRotationOffset);
 			}
 		}
 		else

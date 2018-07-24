@@ -18,6 +18,9 @@ class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
 {
 	GENERATED_BODY()
 
+public:
+	AGunBase(const FObjectInitializer& ObjectInitializer);
+
 	virtual void OnGrip_Implementation(UGripMotionControllerComponent * GrippingController, const FBPActorGripInformation & GripInformation) override;
 	virtual void OnGripRelease_Implementation(UGripMotionControllerComponent * ReleasingController, const FBPActorGripInformation & GripInformation, bool bWasSocketed = false) override;
 

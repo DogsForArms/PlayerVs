@@ -10,7 +10,8 @@
 //////////////////////////////////////////////////////////////////////////
 // Initialization
 
-AGunBase::AGunBase()
+AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer) 
+	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 

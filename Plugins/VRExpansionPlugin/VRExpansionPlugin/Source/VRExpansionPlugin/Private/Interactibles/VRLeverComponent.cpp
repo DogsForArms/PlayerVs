@@ -7,7 +7,7 @@
 UVRLeverComponent::UVRLeverComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	this->bGenerateOverlapEvents = true;
+	this->SetGenerateOverlapEvents(true);
 	this->PrimaryComponentTick.bStartWithTickEnabled = false;
 	PrimaryComponentTick.bCanEverTick = true;
 
@@ -149,6 +149,8 @@ void UVRLeverComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
 		// Rolling average across num samples
 		MomentumAtDrop -= MomentumAtDrop / FramesToAverage;
 		MomentumAtDrop += ((FullCurrentAngle - LastLeverAngle) / DeltaTime) / FramesToAverage;
+
+		MomentumAtDrop = FMath::Min(MaxLeverMomentum, MomentumAtDrop);
 
 		LastLeverAngle = FullCurrentAngle;
 	}
@@ -301,6 +303,7 @@ void UVRLeverComponent::OnGrip_Implementation(UGripMotionControllerComponent * G
 	LastLeverAngle = CurrentLeverAngle;
 	bIsLerping = false;
 	bIsInFirstTick = true;
+	MomentumAtDrop = 0.0f;
 
 	if (GripInformation.GripMovementReplicationSetting != EGripMovementReplicationSettings::ForceServerSideMovement)
 	{
@@ -436,10 +439,10 @@ void UVRLeverComponent::ClosestGripSlotInRange_Implementation(FVector WorldLocat
 	bHadSlotInRange = false;
 }
 
-bool UVRLeverComponent::IsInteractible_Implementation()
+/*bool UVRLeverComponent::IsInteractible_Implementation()
 {
 	return false;
-}
+}*/
 
 void UVRLeverComponent::IsHeld_Implementation(UGripMotionControllerComponent *& CurHoldingController, bool & bCurIsHeld)
 {
@@ -457,7 +460,7 @@ void UVRLeverComponent::SetHeld_Implementation(UGripMotionControllerComponent * 
 		HoldingController = nullptr;
 }
 
-FBPInteractionSettings UVRLeverComponent::GetInteractionSettings_Implementation()
+/*FBPInteractionSettings UVRLeverComponent::GetInteractionSettings_Implementation()
 {
 	return FBPInteractionSettings();
-}
+}*/
