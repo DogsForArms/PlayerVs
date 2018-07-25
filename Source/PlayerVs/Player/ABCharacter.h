@@ -50,13 +50,14 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 {
 	GENERATED_BODY()
 
-	AABCharacter();
+	AABCharacter(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
 
 	void SetupTalker();
-	void OnRep_PlayerState() override;
+
+	virtual void OnRep_PlayerState() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

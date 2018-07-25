@@ -13,8 +13,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
-
-AABCharacter::AABCharacter()
+AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	GripTraceLength = 1.f;
 	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
@@ -49,6 +49,9 @@ void AABCharacter::SetupTalker()
 	{
 		PlayerController->ToggleSpeaking(true);
 	}
+	UE_LOG(LogTemp, Warning, TEXT("SetupTalker Player: %s ComponentToAttachTo: %s"), 
+		*ASteamHandler::GetSteamID(PlayerController), 
+		*Settings.ComponentToAttachTo->GetName())
 }
 
 //////////////////////////////////////////////////////////////////////////
