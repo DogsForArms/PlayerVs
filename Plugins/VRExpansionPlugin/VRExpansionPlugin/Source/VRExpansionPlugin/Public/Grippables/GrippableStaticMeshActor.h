@@ -20,8 +20,11 @@
 UCLASS(Blueprintable, meta = (BlueprintSpawnableComponent), ClassGroup = (VRExpansionPlugin))
 class VREXPANSIONPLUGIN_API UOptionalRepStaticMeshComponent : public UStaticMeshComponent
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
+
 public:
+	UOptionalRepStaticMeshComponent(const FObjectInitializer& ObjectInitializer);
+
 
 	// Overrides the default of : true and allows for controlling it like in an actor, should be default of off normally with grippable components
 	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "Component Replication")
@@ -36,7 +39,11 @@ public:
 UCLASS(Blueprintable, meta = (BlueprintSpawnableComponent), ClassGroup = (VRExpansionPlugin))
 class VREXPANSIONPLUGIN_API AGrippableStaticMeshActor : public AStaticMeshActor, public IVRGripInterface, public IGameplayTagAssetInterface
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
+
+public:
+	AGrippableStaticMeshActor(const FObjectInitializer& ObjectInitializer);
+
 
 	~AGrippableStaticMeshActor();
 
@@ -68,9 +75,8 @@ class VREXPANSIONPLUGIN_API AGrippableStaticMeshActor : public AStaticMeshActor,
 		if (VRGripInterfaceSettings.MovementReplicationType == EGripMovementReplicationSettings::ClientSide_Authoritive ||
 			VRGripInterfaceSettings.MovementReplicationType == EGripMovementReplicationSettings::ClientSide_Authoritive_NoRep)
 		{
-			const AActor* MyOwner = GetOwner();
-			const APawn* MyPawn = Cast<APawn>(MyOwner);
-			return (MyPawn ? MyPawn->IsLocallyControlled() : (MyOwner && MyOwner->Role == ENetRole::ROLE_Authority));
+			const APawn* MyPawn = Cast<APawn>(GetOwner());
+			return (MyPawn ? MyPawn->IsLocallyControlled() : false);
 		}
 		else
 			return false;
@@ -181,8 +187,8 @@ class VREXPANSIONPLUGIN_API AGrippableStaticMeshActor : public AStaticMeshActor,
 
 
 	// Check if the object is an interactable
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "VRGripInterface")
-		bool IsInteractible();
+	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "VRGripInterface")
+	//	bool IsInteractible();
 
 	// Returns if the object is held and if so, which pawn is holding it
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "VRGripInterface")
@@ -197,8 +203,8 @@ class VREXPANSIONPLUGIN_API AGrippableStaticMeshActor : public AStaticMeshActor,
 		bool RequestsSocketing(USceneComponent *& ParentToSocketTo, FName & OptionalSocketName, FTransform_NetQuantize & RelativeTransform);
 
 	// Get interactable settings
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "VRGripInterface")
-		FBPInteractionSettings GetInteractionSettings();
+	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "VRGripInterface")
+		//FBPInteractionSettings GetInteractionSettings();
 
 	// Events //
 

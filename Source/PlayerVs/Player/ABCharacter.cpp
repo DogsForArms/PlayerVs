@@ -13,8 +13,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
-
-AABCharacter::AABCharacter()
+AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	GripTraceLength = 1.f;
 	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
@@ -32,10 +32,25 @@ void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent*
 	RightHandGrabArea = RightGrab;
 }
 
-void AABCharacter::OnRep_PlayerState()
+void AABCharacter::BeginPlay()
 {
-	Super::OnRep_PlayerState();
-	SetupTalker();
+	Super::BeginPlay();
+	GetWorld()->GetTimerManager().SetTimer(WaitForPlayerStateHandle, this, &AABCharacter::TrySetupTalker, 0.2f, true);
+}
+
+void AABCharacter::TrySetupTalker()
+{
+	if (PlayerState)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(WaitForPlayerStateHandle);
+		SetupTalker();
+	}
+}
+
+void AABCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 }
 
 void AABCharacter::SetupTalker()
@@ -49,6 +64,8 @@ void AABCharacter::SetupTalker()
 	{
 		PlayerController->ToggleSpeaking(true);
 	}
+	UE_LOG(LogTemp, Warning, TEXT("SetupTalker ComponentToAttachTo: %s"), 
+		*Settings.ComponentToAttachTo->GetName())
 }
 
 //////////////////////////////////////////////////////////////////////////

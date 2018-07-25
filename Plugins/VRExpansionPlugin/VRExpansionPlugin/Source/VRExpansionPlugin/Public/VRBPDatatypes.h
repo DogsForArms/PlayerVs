@@ -282,61 +282,9 @@ struct FTransform_NetQuantize : public FTransform
 	FORCEINLINE FTransform_NetQuantize(const FVector& InX, const FVector& InY, const FVector& InZ, const FVector& InTranslation) 
 		: FTransform(InX, InY, InZ, InTranslation)
 	{}
+public:
 
-	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
-	{
-		bOutSuccess = true;
-
-		FVector rTranslation;
-		FVector rScale3D;
-		//FQuat rRotation;
-		FRotator rRotation;
-
-		uint16 ShortPitch = 0;
-		uint16 ShortYaw = 0;
-		uint16 ShortRoll = 0;
-
-		if (Ar.IsSaving())
-		{
-			// Because transforms can be vectorized or not, need to use the inline retrievers
-			rTranslation = this->GetTranslation();
-			rScale3D = this->GetScale3D();
-			rRotation = this->Rotator();//this->GetRotation();
-
-			// Translation set to 2 decimal precision
-			bOutSuccess &= SerializePackedVector<100, 30>(rTranslation, Ar);
-
-			// Scale set to 2 decimal precision, had it 1 but realized that I used two already even
-			bOutSuccess &= SerializePackedVector<100, 30>(rScale3D, Ar);
-
-			// Rotation converted to FRotator and short compressed, see below for conversion reason
-			// FRotator already serializes compressed short by default but I can save a func call here
-			rRotation.SerializeCompressedShort(Ar);
-
-			//Ar << rRotation;
-
-			// If I converted it to a rotator and serialized as shorts I would save 6 bytes.
-			// I am unsure about a safe method of compressed serializing a quat, though I read through smallest three
-			// Epic already drops W from the Quat and reconstructs it after the send.
-			// Converting to rotator first may have conversion issues and has a perf cost....needs testing, epic attempts to handle
-			// Singularities in their conversion but I haven't tested it in all circumstances
-			//rRotation.SerializeCompressedShort(Ar);
-		}
-		else // If loading
-		{
-			bOutSuccess &= SerializePackedVector<100, 30>(rTranslation, Ar);
-			bOutSuccess &= SerializePackedVector<100, 30>(rScale3D, Ar);
-
-			rRotation.SerializeCompressedShort(Ar);
-
-			//Ar << rRotation;
-
-			// Set it
-			this->SetComponents(rRotation.Quaternion(), rTranslation, rScale3D);
-		}
-
-		return bOutSuccess;
-	}
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 };
 
 template<>
@@ -472,9 +420,13 @@ enum class EGripCollisionType : uint8
 
 	/** Free constraint to controller base with a twist drive. */
 	ManipulationGripWithWristTwist,
+	
+	/** Attachment grips use native attachment and only sets location / rotation if they differ, this grip always late updates*/
+	AttachmentGrip,
 
 	/** Custom grip is to be handled by the object itself, it just sends the TickGrip event every frame but doesn't move the object. */
 	CustomGrip
+
 };
 
 // This needs to be updated as the original gets changed, that or hope they make the original blueprint accessible.
@@ -981,6 +933,8 @@ struct TStructOpsTypeTraits< FBPSecondaryGripInfo > : public TStructOpsTypeTrait
 	};
 };
 
+// Removed interaction settings in 4.20
+/*
 USTRUCT(BlueprintType, Category = "VRExpansionLibrary")
 struct VREXPANSIONPLUGIN_API FBPInteractionSettings
 {
@@ -1018,14 +972,14 @@ public:
 	// to re-enter their offsets all over again......
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Linear")
-		FVector/*_NetQuantize100*/ InitialLinearTranslation;
+		FVector InitialLinearTranslation;
 
 	// To use property, set value as -Distance
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Linear")
-		FVector/*_NetQuantize100*/ MinLinearTranslation;
+		FVector MinLinearTranslation;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Linear")
-		FVector/*_NetQuantize100*/ MaxLinearTranslation;
+		FVector MaxLinearTranslation;
 
 	// FRotators already by default NetSerialize as shorts
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Angular")
@@ -1054,7 +1008,7 @@ public:
 		MinAngularTranslation(FRotator::ZeroRotator),
 		MaxAngularTranslation(FRotator::ZeroRotator)
 	{}
-};
+};*/
 
 USTRUCT(BlueprintType, Category = "VRExpansionLibrary")
 struct VREXPANSIONPLUGIN_API FBPActorGripInformation
@@ -1334,17 +1288,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface|AdvancedGripSettings")
 		FBPAdvGripSettings AdvancedGripSettings;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface")
-		bool bIsInteractible;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface")
+		//bool bIsInteractible;
 
-	UPROPERTY(BlueprintReadOnly, NotReplicated, Category = "VRGripInterface")
+	UPROPERTY(BlueprintReadWrite, NotReplicated, Category = "VRGripInterface")
 		bool bIsHeld; // Set on grip notify, not net serializing
 
-	UPROPERTY(BlueprintReadOnly, NotReplicated, Category = "VRGripInterface")
+	UPROPERTY(BlueprintReadWrite, NotReplicated, Category = "VRGripInterface")
 		UGripMotionControllerComponent * HoldingController; // Set on grip notify, not net serializing
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface", meta = (editcondition = "bIsInteractible"))
-		FBPInteractionSettings InteractionSettings;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface", meta = (editcondition = "bIsInteractible"))
+	//	FBPInteractionSettings InteractionSettings;
 
 	FBPInterfaceProperties():
 		bDenyGripping(false),
@@ -1360,7 +1314,7 @@ public:
 		ConstraintBreakDistance(0.0f),
 		SecondarySlotRange(20.0f),
 		PrimarySlotRange(20.0f),
-		bIsInteractible(false),
+		//bIsInteractible(false),
 		bIsHeld(false),
 		HoldingController(nullptr)
 	{

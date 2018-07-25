@@ -7,12 +7,12 @@
 UVRSliderComponent::UVRSliderComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	this->bGenerateOverlapEvents = true;
+	this->SetGenerateOverlapEvents(true);
 	this->PrimaryComponentTick.bStartWithTickEnabled = false;
 	PrimaryComponentTick.bCanEverTick = true;
 
 	bRepGameplayTags = false;
-	bReplicateMovement = false;
+	bReplicateMovement = true;
 
 	MovementReplicationSetting = EGripMovementReplicationSettings::ForceClientSideMovement;
 	BreakDistance = 100.0f;
@@ -22,7 +22,14 @@ UVRSliderComponent::UVRSliderComponent(const FObjectInitializer& ObjectInitializ
 
 	MinSlideDistance = FVector::ZeroVector;
 	MaxSlideDistance = FVector(10.0f, 0.f, 0.f);
+	SliderRestitution = 0.0f;
 	CurrentSliderProgress = 0.0f;
+	LastSliderProgress = 0.0f;
+	
+	MomentumAtDrop = 0.0f;
+	SliderMomentumFriction = 3.0f;
+	MaxSliderMomentum = 1.0f;
+	FramesToAverage = 3;
 
 	InitialInteractorLocation = FVector::ZeroVector;
 	InitialGripLoc = FVector::ZeroVector;
@@ -59,6 +66,9 @@ void UVRSliderComponent::GetLifetimeReplicatedProps(TArray< class FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME_CONDITION(UVRSliderComponent, InitialRelativeTransform, COND_Custom);
+	DOREPLIFETIME_CONDITION(UVRSliderComponent, SplineComponentToFollow, COND_Custom);
+
 	DOREPLIFETIME(UVRSliderComponent, bRepGameplayTags);
 	DOREPLIFETIME(UVRSliderComponent, bReplicateMovement);
 	DOREPLIFETIME_CONDITION(UVRSliderComponent, GameplayTags, COND_Custom);
@@ -67,6 +77,10 @@ void UVRSliderComponent::GetLifetimeReplicatedProps(TArray< class FLifetimePrope
 void UVRSliderComponent::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
+
+	// Replicate the levers initial transform if we are replicating movement
+	DOREPLIFETIME_ACTIVE_OVERRIDE(UVRSliderComponent, InitialRelativeTransform, bReplicateMovement);
+	DOREPLIFETIME_ACTIVE_OVERRIDE(UVRSliderComponent, SplineComponentToFollow, bReplicateMovement);
 
 	// Don't replicate if set to not do it
 	DOREPLIFETIME_ACTIVE_OVERRIDE(UVRSliderComponent, GameplayTags, bRepGameplayTags);
@@ -81,18 +95,81 @@ void UVRSliderComponent::BeginPlay()
 	// Call the base class 
 	Super::BeginPlay();
 
-	if (USplineComponent * ParentSpline = Cast<USplineComponent>(GetAttachParent()))
+	// If we are the server, or this component doesn't replicate then get the initial lever location
+	if (!bReplicates || GetNetMode() < ENetMode::NM_Client)
 	{
-		SetSplineComponentToFollow(ParentSpline);
+		if (USplineComponent * ParentSpline = Cast<USplineComponent>(GetAttachParent()))
+		{
+			SetSplineComponentToFollow(ParentSpline);
+		}
+		else
+		{
+			ResetInitialSliderLocation();
+		}
 	}
 	else
-		ResetInitialSliderLocation();
+	{
+		CalculateSliderProgress();
+	}
 }
 
 void UVRSliderComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	// Call supers tick (though I don't think any of the base classes to this actually implement it)
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsLerping)
+	{
+		if (FMath::IsNearlyZero(MomentumAtDrop * DeltaTime, 0.00001f))
+		{
+			bIsLerping = false;
+		}
+		else
+		{
+			MomentumAtDrop = FMath::FInterpTo(MomentumAtDrop, 0.0f, DeltaTime, SliderMomentumFriction);
+
+			float newProgress = CurrentSliderProgress + (MomentumAtDrop * DeltaTime);
+
+			if (newProgress < 0.0f || FMath::IsNearlyEqual(newProgress, 0.0f, 0.00001f))
+			{
+				if (SliderRestitution > 0.0f)
+				{
+					// Reverse the momentum
+					MomentumAtDrop = -(MomentumAtDrop * SliderRestitution);
+					this->SetSliderProgress(0.0f);
+				}
+				else
+				{
+					bIsLerping = false;
+					this->SetSliderProgress(0.0f);
+				}
+			}
+			else if (newProgress > 1.0f || FMath::IsNearlyEqual(newProgress, 1.0f, 0.00001f))
+			{
+				if (SliderRestitution > 0.0f)
+				{
+					// Reverse the momentum
+					MomentumAtDrop = -(MomentumAtDrop * SliderRestitution);
+					this->SetSliderProgress(1.0f);
+				}
+				else
+				{
+					bIsLerping = false;
+					this->SetSliderProgress(1.0f);
+				}
+			}
+			else
+			{
+				this->SetSliderProgress(newProgress);
+			}
+		}
+
+		if (!bIsLerping)
+		{
+			this->SetComponentTickEnabled(false);
+			bReplicateMovement = true;
+		}
+	}
 }
 
 void UVRSliderComponent::TickGrip_Implementation(UGripMotionControllerComponent * GrippingController, const FBPActorGripInformation & GripInformation, float DeltaTime) 
@@ -196,6 +273,17 @@ void UVRSliderComponent::TickGrip_Implementation(UGripMotionControllerComponent 
 		CurrentSliderProgress = GetCurrentSliderProgress(bSlideDistanceIsInParentSpace ? ClampedLocation * InitialRelativeTransform.GetScale3D() : ClampedLocation);
 	}
 
+	if (SliderBehaviorWhenReleased == EVRInteractibleSliderDropBehavior::RetainMomentum)
+	{
+		// Rolling average across num samples
+		MomentumAtDrop -= MomentumAtDrop / FramesToAverage;
+		MomentumAtDrop += ((CurrentSliderProgress - LastSliderProgress) / DeltaTime) / FramesToAverage;
+
+		MomentumAtDrop = FMath::Min(MaxSliderMomentum, MomentumAtDrop);
+
+		LastSliderProgress = CurrentSliderProgress;
+	}
+
 	// Skip first check, this will skip an event throw on rounded
 	if (LastSliderProgressState < 0.0f)
 	{
@@ -250,12 +338,31 @@ void UVRSliderComponent::OnGrip_Implementation(UGripMotionControllerComponent * 
 	LerpedKey = 0.0f;
 	bHitEventThreshold = false;
 	LastSliderProgressState = -1.0f;
+	LastSliderProgress = CurrentSliderProgress;
+
+	bIsLerping = false;
+	MomentumAtDrop = 0.0f;
+
+	if (GripInformation.GripMovementReplicationSetting != EGripMovementReplicationSettings::ForceServerSideMovement)
+	{
+		bReplicateMovement = false;
+	}
 }
 
 void UVRSliderComponent::OnGripRelease_Implementation(UGripMotionControllerComponent * ReleasingController, const FBPActorGripInformation & GripInformation, bool bWasSocketed) 
 {
 	//this->SetComponentTickEnabled(false);
 	// #TODO: Handle letting go and how lerping works, specifically with the snap points it may be an issue
+	if (SliderBehaviorWhenReleased != EVRInteractibleSliderDropBehavior::Stay)
+	{
+		bIsLerping = true;
+		this->SetComponentTickEnabled(true);
+	}
+	else
+	{
+		this->SetComponentTickEnabled(false);
+		bReplicateMovement = true;
+	}
 }
 
 void UVRSliderComponent::OnChildGrip_Implementation(UGripMotionControllerComponent * GrippingController, const FBPActorGripInformation & GripInformation) {}
@@ -355,10 +462,10 @@ void UVRSliderComponent::ClosestGripSlotInRange_Implementation(FVector WorldLoca
 	bHadSlotInRange = false;
 }
 
-bool UVRSliderComponent::IsInteractible_Implementation()
+/*bool UVRSliderComponent::IsInteractible_Implementation()
 {
 	return false;
-}
+}*/
 
 void UVRSliderComponent::IsHeld_Implementation(UGripMotionControllerComponent *& CurHoldingController, bool & bCurIsHeld)
 {
@@ -376,7 +483,7 @@ void UVRSliderComponent::SetHeld_Implementation(UGripMotionControllerComponent *
 		HoldingController = nullptr;
 }
 
-FBPInteractionSettings UVRSliderComponent::GetInteractionSettings_Implementation()
+/*FBPInteractionSettings UVRSliderComponent::GetInteractionSettings_Implementation()
 {
 	return FBPInteractionSettings();
-}
+}*/
