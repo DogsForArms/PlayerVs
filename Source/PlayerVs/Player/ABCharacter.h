@@ -57,7 +57,14 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 
 	void SetupTalker();
 
-	virtual void OnRep_PlayerState() override;
+	virtual void BeginPlay() override;
+
+	FTimerHandle WaitForPlayerStateHandle;
+
+	UFUNCTION()
+	void TrySetupTalker();
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
