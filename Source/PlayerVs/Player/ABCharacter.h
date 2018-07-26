@@ -50,19 +50,15 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 {
 	GENERATED_BODY()
 
+public: //Initialization
 	AABCharacter(const FObjectInitializer& ObjectInitializer);
+
+	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
 
-	void SetupTalker();
-
-	virtual void BeginPlay() override;
-
-	FTimerHandle WaitForPlayerStateHandle;
-
-	UFUNCTION()
-	void TrySetupTalker();
+	virtual void Tick(float DeltaTime) override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -76,25 +72,34 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
 
-	virtual void Tick(float DeltaTime) override;
+private: //VOIPTalker Setup
+	FTimerHandle WaitForPlayerStateHandle;
 
-	void UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction);
+	//if PlayerState, SetupTalker & clear timer
+	UFUNCTION()
+	void TrySetupTalker();
+
+	UFUNCTION()
+	void SetupTalker();
+
+public: //Debugging
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Voice")
+	UVOIPTalker* Talker;
 
 public:
-	// Voice Debugging (must be done in standalone).  bDrdopVoice will put your voice on the ground to test spacialization.
+	// Voice Debugging (must be done in standalone).  bDrdopVoice will put your voice on the ground to test spatialization.
 	// bLoopback loops your audio back to you.
 	UFUNCTION(BlueprintCallable, Category = "Debug")
 	void DebugVoice(bool bDropVoice, bool bLoopback);
 
 public:
+	void UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	UWidgetInteractionComponent* WidgetInteractionLeft;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	UWidgetInteractionComponent* WidgetInteractionRight;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Voice")
-	UVOIPTalker* Talker;
 
 	UFUNCTION(BlueprintCallable)
 	void GrabLeft();
@@ -116,8 +121,6 @@ public:
 
 	UFUNCTION(Reliable, Server, WithValidation)
 	void ServerTryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
-	void ServerTryGrab_Implementation(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
-	bool ServerTryGrab_Validate(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
 
 	UFUNCTION()
 	void TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip);
@@ -127,8 +130,6 @@ public:
 
 	UFUNCTION(Reliable, Server, WithValidation)
 	void ServerTryDropAll(EControllerHand EHand);
-	void ServerTryDropAll_Implementation(EControllerHand EHand);
-	bool ServerTryDropAll_Validate(EControllerHand EHand);
 
 	UFUNCTION()
 	void TryDropAll(EControllerHand EHand);
@@ -147,11 +148,18 @@ public:
 	void AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand);
 
 private:
+	UFUNCTION()
 	FName GetPrimarySlotPrefix(UObject* ObjectToGrip, UGripMotionControllerComponent* Hand);
+
+	UFUNCTION()
 	FTransform GetHandRelativeTransformOfBoneOrObject(UGripMotionControllerComponent* Hand, UObject* ObjectToGrip, FTransform ObjectTransform, FName BoneName);
+	
+	UFUNCTION()
 	bool GetBoneTransform(FTransform& BoneTransform, UObject* ComponentOrActor, FName BoneName);
 	
+	UFUNCTION()
 	UGripMotionControllerComponent* GetHandReference(EControllerHand EHand);
 
+	UFUNCTION()
 	bool IsLocalGripOrDropEvent(UObject* ObjectToGrip);
 };

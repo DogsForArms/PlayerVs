@@ -95,7 +95,6 @@ void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetIn
 
 void AABCharacter::DebugVoice(bool bDropVoice, bool bLoopback)
 {
-	SetupTalker(); //make sure talker was setup
 	FVoiceSettings Settings = Talker->Settings;
 	Settings.ComponentToAttachTo = bDropVoice ? NULL : VRReplicatedCamera;
 	Talker->Settings = Settings;
@@ -343,7 +342,7 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 	UE_LOG(LogTemp, Warning, TEXT("Object is interface grab %d"), bGripOccured)
 	if (!bGripOccured)
 	{
-		//Bla de bla, TODO logic for switching hands.
+		//TODO logic for switching hands.
 		bGripOccured = Hand->GripObject(
 			ObjectToGrip,
 			Transform,
