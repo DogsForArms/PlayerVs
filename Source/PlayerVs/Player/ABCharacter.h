@@ -156,7 +156,7 @@ public:
 	UFUNCTION()
 	void CallCorrectDropEvent(UGripMotionControllerComponent* Hand);
 
-	UFUNCTION(Reliable, Server, WithValidation)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerTryDropAll(EControllerHand EHand);
 
 	UFUNCTION()
@@ -167,6 +167,9 @@ public:
 
 	UFUNCTION()
 	void PutInInventory(AActor* Actor);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPutInInventory(AActor* GrippedActor);
 
 	void UseLeft();
 	void StopUseLeft();

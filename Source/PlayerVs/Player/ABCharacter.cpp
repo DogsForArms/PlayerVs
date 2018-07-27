@@ -37,8 +37,6 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
 	Body->SetupAttachment(ParentRelativeAttachment);
 
-
-
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -461,15 +459,26 @@ void AABCharacter::TryDropAll(EControllerHand EHand)
 	Hand->GetGrippedActors(GrippedActors);
 	for (AActor *GrippedActor : GrippedActors)
 	{
-		Hand->DropObject(GrippedActor, true);
 		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
 		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
 
+		Hand->DropObject(GrippedActor, true);
 		if (bInventory)
 		{
 			PutInInventory(GrippedActor);
+			ServerPutInInventory(GrippedActor);
 		}
 	}
+}
+
+void AABCharacter::ServerPutInInventory_Implementation(AActor* GrippedActor)
+{
+	PutInInventory(GrippedActor);
+}
+
+bool AABCharacter::ServerPutInInventory_Validate(AActor* Actor)
+{
+	return true;
 }
 
 void AABCharacter::PutInInventory(AActor* Actor)
