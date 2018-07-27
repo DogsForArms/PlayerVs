@@ -169,7 +169,7 @@ public:
 	void PutInInventory(AActor* Actor);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerPutInInventory(AActor* GrippedActor);
+	void ServerPutInInventory(AActor* GrippedActor, FTransform_NetQuantize transform);
 
 	void UseLeft();
 	void StopUseLeft();

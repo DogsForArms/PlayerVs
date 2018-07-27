@@ -466,17 +466,18 @@ void AABCharacter::TryDropAll(EControllerHand EHand)
 		if (bInventory)
 		{
 			PutInInventory(GrippedActor);
-			ServerPutInInventory(GrippedActor);
+			ServerPutInInventory(GrippedActor, GrippedActor->GetActorTransform());
 		}
 	}
 }
 
-void AABCharacter::ServerPutInInventory_Implementation(AActor* GrippedActor)
+void AABCharacter::ServerPutInInventory_Implementation(AActor* GrippedActor, FTransform_NetQuantize transform)
 {
+	GrippedActor->SetActorTransform(transform);
 	PutInInventory(GrippedActor);
 }
 
-bool AABCharacter::ServerPutInInventory_Validate(AActor* Actor)
+bool AABCharacter::ServerPutInInventory_Validate(AActor* Actor, FTransform_NetQuantize transform)
 {
 	return true;
 }
