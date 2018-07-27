@@ -29,12 +29,15 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 
 	HolsterArea->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	HolsterArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); //Just Query?
-	HolsterArea->SetNotifyRigidBodyCollision(true);
+	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly); //Just Query?
 	HolsterArea->SetGenerateOverlapEvents(true);
-	HolsterArea->bMultiBodyOverlap = true;
 	HolsterArea->OnComponentBeginOverlap.AddDynamic(this, &AABCharacter::OnBeginOverlapHolster);
 	HolsterArea->OnComponentEndOverlap.AddDynamic(this, &AABCharacter::OnEndOverlapHolster);
+
+	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
+	Body->SetupAttachment(ParentRelativeAttachment);
+
+
 
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -472,7 +475,7 @@ void AABCharacter::TryDropAll(EControllerHand EHand)
 void AABCharacter::PutInInventory(AActor* Actor)
 {
 	Actor->DisableComponentsSimulatePhysics();
-	Actor->AttachToComponent(HolsterArea, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	Actor->AttachToComponent(HolsterArea, FAttachmentTransformRules::KeepWorldTransform);
 }
 
 bool AABCharacter::CanPutInInventory(AActor* Actor)

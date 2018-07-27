@@ -94,6 +94,9 @@ public: //Initialization
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
 	UStaticMeshComponent* HolsterArea;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	UStaticMeshComponent* Body;
+
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
 
