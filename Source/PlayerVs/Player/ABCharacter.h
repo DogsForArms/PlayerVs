@@ -11,6 +11,7 @@
 class UGripMotionControllerComponent;
 class UVOIPTalker;
 class UWidgetInteractionComponent;
+class UStaticMeshComponent;
 
 USTRUCT()
 struct FGrabScanResult
@@ -58,6 +59,24 @@ public: //Initialization
 	UFUNCTION(BlueprintCallable)
 	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
 
+	UFUNCTION()
+	void OnBeginOverlapHolster(
+		UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEndOverlapHolster(
+		UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex);
+
+	bool HandIsInHolster(UGripMotionControllerComponent* Hand);
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -68,6 +87,12 @@ public: //Initialization
 	USphereComponent* LeftHandGrabArea;
 	UPROPERTY()
 	USphereComponent* RightHandGrabArea;
+
+	bool bLeftHandIsInHolster;
+	bool bRightHandIsInHolster;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	UStaticMeshComponent* HolsterArea;
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
@@ -133,6 +158,12 @@ public:
 
 	UFUNCTION()
 	void TryDropAll(EControllerHand EHand);
+
+	UFUNCTION()
+	bool CanPutInInventory(AActor* Actor);
+
+	UFUNCTION()
+	void PutInInventory(AActor* Actor);
 
 	void UseLeft();
 	void StopUseLeft();
