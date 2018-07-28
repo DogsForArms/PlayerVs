@@ -11,6 +11,7 @@
 #include "Online/SteamHandler.h"
 #include "GameFramework/PlayerController.h"
 #include "Actors/GunBase.h"
+#include "PlayerVs.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -18,6 +19,7 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	GripTraceLength = 1.f;
+
 	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
 	WidgetInteractionLeft = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteractionLeft");
 	WidgetInteractionLeft->SetupAttachment(LeftMotionController);
@@ -29,13 +31,18 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 
 	HolsterArea->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	HolsterArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly); //Just Query?
+	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	HolsterArea->SetGenerateOverlapEvents(true);
 	HolsterArea->OnComponentBeginOverlap.AddDynamic(this, &AABCharacter::OnBeginOverlapHolster);
 	HolsterArea->OnComponentEndOverlap.AddDynamic(this, &AABCharacter::OnEndOverlapHolster);
 
 	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
 	Body->SetupAttachment(ParentRelativeAttachment);
+	Body->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	Body->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
+
+	VRRootReference->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	VRRootReference->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
 
 	PrimaryActorTick.bCanEverTick = true;
 }
