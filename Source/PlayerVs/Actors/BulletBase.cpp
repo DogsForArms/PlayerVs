@@ -7,6 +7,7 @@
 #include "Components/AudioComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "PlayerVs.h"
+#include "Player/ABCharacter.h"
 
 // Sets default values
 ABulletBase::ABulletBase()
@@ -19,6 +20,7 @@ ABulletBase::ABulletBase()
 	CollisionComp->AlwaysLoadOnClient = true;
 	CollisionComp->AlwaysLoadOnServer = true;
 	CollisionComp->bTraceComplexOnMove = true;
+	CollisionComp->SetNotifyRigidBodyCollision(true);
 	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComp->SetCollisionObjectType(COLLISION_PROJECTILE);
 	CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -26,6 +28,7 @@ ABulletBase::ABulletBase()
 	CollisionComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
+
 	RootComponent = CollisionComp;
 
 	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileComp");
@@ -76,6 +79,13 @@ void ABulletBase::OnImpact(const FHitResult& HitResult)
 	{
 		bExploded = true;
 		OnRep_Exploded();
+
+		AABCharacter *HitCharacter = Cast<AABCharacter>(HitResult.GetActor());
+		if (HitCharacter)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Character, component %s"), *HitResult.GetComponent()->GetName())
+			HitCharacter->Damage(50.f);
+		}
 	}
 }
 

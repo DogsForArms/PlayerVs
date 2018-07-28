@@ -12,6 +12,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Actors/GunBase.h"
 #include "PlayerVs.h"
+#include "Net/UnrealNetwork.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -38,6 +39,7 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 
 	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
 	Body->SetupAttachment(ParentRelativeAttachment);
+	Body->SetGenerateOverlapEvents(false);
 	Body->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 	Body->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
 
@@ -45,7 +47,16 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	VRRootReference->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
 
 	PrimaryActorTick.bCanEverTick = true;
+
+	Health = 100.f;
 }
+
+void AABCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AABCharacter, Health);
+}
+
 
 void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
 {
@@ -70,12 +81,12 @@ void AABCharacter::OnBeginOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = true;
-		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Left"))
+		//UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = true;
-		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Right"))
+		//UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Right"))
 	}
 }
 
@@ -88,12 +99,12 @@ void AABCharacter::OnEndOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = false;
-		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Left"))
+		//UE_LOG(LogTemp, Warning, TEXT("End Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = false;
-		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Right"))
+		//UE_LOG(LogTemp, Warning, TEXT("End Overlapping Right"))
 	}
 }
 
@@ -669,4 +680,19 @@ bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 	return 
 		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive ||
 		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive_NoRep;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Health Methods
+
+void AABCharacter::Damage(float Damage)
+{
+	Health -= Damage;
+	//Listen server manual OnRep call.
+	OnRep_Health(); 
+}
+
+void AABCharacter::OnRep_Health()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Health is %f"), Health)
 }

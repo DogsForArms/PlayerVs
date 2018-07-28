@@ -35,6 +35,7 @@ public:
 	// Sets default values for this actor's properties
 	ABulletBase();
 
+	UFUNCTION()
 	void InitializeBullet(float Velocity, AActor* Gun);
 
 protected:

@@ -54,6 +54,8 @@ class PLAYERVS_API AABCharacter : public AVRCharacter
 public: //Initialization
 	AABCharacter(const FObjectInitializer& ObjectInitializer);
 
+	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const;
+
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
@@ -199,4 +201,15 @@ private:
 
 	UFUNCTION()
 	bool IsLocalGripOrDropEvent(UObject* ObjectToGrip);
+
+public:
+
+	UFUNCTION()
+	void Damage(float damage);
+
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_Health)
+	float Health;
+
+	UFUNCTION()
+	void OnRep_Health();
 };
