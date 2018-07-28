@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ABCharacter.h"
-#include "components/StaticMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/WidgetInteractionComponent.h"
 #include "MotionControllerComponent.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "DrawDebugHelpers.h"
@@ -9,7 +10,7 @@
 #include "VoiceConfig.h"
 #include "Online/SteamHandler.h"
 #include "GameFramework/PlayerController.h"
-#include "Components/WidgetInteractionComponent.h"
+#include "Actors/GunBase.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -22,6 +23,19 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	WidgetInteractionLeft->SetupAttachment(LeftMotionController);
 	WidgetInteractionRight = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteractionRight");
 	WidgetInteractionRight->SetupAttachment(RightMotionController);
+
+	HolsterArea = CreateDefaultSubobject<UStaticMeshComponent>("Holster");
+	HolsterArea->SetupAttachment(ParentRelativeAttachment);
+
+	HolsterArea->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	HolsterArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly); //Just Query?
+	HolsterArea->SetGenerateOverlapEvents(true);
+	HolsterArea->OnComponentBeginOverlap.AddDynamic(this, &AABCharacter::OnBeginOverlapHolster);
+	HolsterArea->OnComponentEndOverlap.AddDynamic(this, &AABCharacter::OnEndOverlapHolster);
+
+	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
+	Body->SetupAttachment(ParentRelativeAttachment);
 
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -37,6 +51,58 @@ void AABCharacter::BeginPlay()
 	Super::BeginPlay();
 	GetWorld()->GetTimerManager().SetTimer(WaitForPlayerStateHandle, this, &AABCharacter::TrySetupTalker, 0.2f, true);
 }
+
+void AABCharacter::OnBeginOverlapHolster(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (OtherComp == LeftHandGrabArea)
+	{
+		bLeftHandIsInHolster = true;
+		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Left"))
+	}
+	else if (OtherComp == RightHandGrabArea)
+	{
+		bRightHandIsInHolster = true;
+		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Right"))
+	}
+}
+
+void AABCharacter::OnEndOverlapHolster(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex)
+{
+	if (OtherComp == LeftHandGrabArea)
+	{
+		bLeftHandIsInHolster = false;
+		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Left"))
+	}
+	else if (OtherComp == RightHandGrabArea)
+	{
+		bRightHandIsInHolster = false;
+		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Right"))
+	}
+}
+
+bool AABCharacter::HandIsInHolster(UGripMotionControllerComponent* Hand)
+{
+	if (Hand == LeftMotionController)
+	{
+		return bLeftHandIsInHolster;
+	} else
+	if (Hand == RightMotionController)
+	{
+		return bRightHandIsInHolster;
+	}
+	return false;
+}
+
 
 void AABCharacter::TrySetupTalker()
 {
@@ -64,8 +130,6 @@ void AABCharacter::SetupTalker()
 	{
 		PlayerController->ToggleSpeaking(true);
 	}
-	UE_LOG(LogTemp, Warning, TEXT("SetupTalker ComponentToAttachTo: %s"), 
-		*Settings.ComponentToAttachTo->GetName())
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,7 +159,6 @@ void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetIn
 
 void AABCharacter::DebugVoice(bool bDropVoice, bool bLoopback)
 {
-	SetupTalker(); //make sure talker was setup
 	FVoiceSettings Settings = Talker->Settings;
 	Settings.ComponentToAttachTo = bDropVoice ? NULL : VRReplicatedCamera;
 	Talker->Settings = Settings;
@@ -175,7 +238,6 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	OverlapParams.bTraceComplex = true;
 	OverlapParams.AddIgnoredActor(this);
 	ObjectFound = GetWorld()->ComponentOverlapMulti(OutOverlaps, GrabArea, GrabArea->GetComponentLocation(), GrabArea->GetComponentRotation(), OverlapParams);
-	UE_LOG(LogTemp, Warning, TEXT("ComponentOverlapMulti %d"), ObjectFound)
 
 	for (FOverlapResult Overlap : OutOverlaps)
 	{
@@ -208,7 +270,6 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	}
 
 	bool bHasResults = OutResults.Num() > 0;
-	UE_LOG(LogTemp, Warning, TEXT("bHasResults %d"), bHasResults)
 	return bHasResults;
 }
 
@@ -322,7 +383,6 @@ void AABCharacter::CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectTo
 
 void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransform_NetQuantize Transform, FName BoneName, bool bIsSlotGrip)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ServerTryGrab ObjectToGrip: %s bIsSlotGrip: %d"), *ObjectToGrip->GetName(), bIsSlotGrip)
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 	UGripMotionControllerComponent* OtherHand = Hand == LeftMotionController ? RightMotionController : LeftMotionController;
 
@@ -333,6 +393,8 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 		OtherHand->DropObject(ObjectToGrip, true);
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("TestHolster grip %s"), *ObjectToGrip->GetName())
+
 	bool bGripOccured = Hand->GripObjectByInterface(
 		ObjectToGrip,
 		Transform,
@@ -340,10 +402,10 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 		BoneName,
 		bIsSlotGrip
 	);
-	UE_LOG(LogTemp, Warning, TEXT("Object is interface grab %d"), bGripOccured)
+
 	if (!bGripOccured)
 	{
-		//Bla de bla, TODO logic for switching hands.
+		//TODO logic for switching hands.
 		bGripOccured = Hand->GripObject(
 			ObjectToGrip,
 			Transform,
@@ -393,12 +455,55 @@ void AABCharacter::TryDropAll(EControllerHand EHand)
 {
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 
-	TArray<UObject*> GrippedObjects;
-	Hand->GetGrippedObjects(GrippedObjects);
-	for (UObject *GrippedObject : GrippedObjects)
+	TArray<AActor*> GrippedActors;
+	Hand->GetGrippedActors(GrippedActors);
+	for (AActor *GrippedActor : GrippedActors)
 	{
-		Hand->DropObject(GrippedObject, true);
+		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
+		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
+
+		Hand->DropObject(GrippedActor, true);
+		if (bInventory)
+		{
+			PutInInventory(GrippedActor);
+			ServerPutInInventory(GrippedActor, GrippedActor->GetActorTransform());
+		}
 	}
+}
+
+void AABCharacter::ServerPutInInventory_Implementation(AActor* GrippedActor, FTransform_NetQuantize transform)
+{
+	GrippedActor->SetActorTransform(transform);
+	PutInInventory(GrippedActor);
+}
+
+bool AABCharacter::ServerPutInInventory_Validate(AActor* Actor, FTransform_NetQuantize transform)
+{
+	return true;
+}
+
+void AABCharacter::PutInInventory(AActor* Actor)
+{
+	Actor->DisableComponentsSimulatePhysics();
+	Actor->AttachToComponent(HolsterArea, FAttachmentTransformRules::KeepWorldTransform);
+}
+
+bool AABCharacter::CanPutInInventory(AActor* Actor)
+{
+	TSet<AActor*> Overlaps;
+	HolsterArea->GetOverlappingActors(Overlaps, AGunBase::StaticClass());
+	UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %d"), Overlaps.Num())
+	for (AActor* Overlap : Overlaps)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %s"), *Overlap->GetName())
+	}
+
+	if (Actor && Overlaps.Contains(Actor))
+	{
+		return true;
+	}
+	
+	return false;
 }
 
 void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
