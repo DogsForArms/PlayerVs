@@ -64,7 +64,6 @@ void AABCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AABCharacter, Health);
-
 	DOREPLIFETIME_CONDITION(AABCharacter, LastTakeHitInfo, COND_Custom);
 }
 
@@ -92,12 +91,10 @@ void AABCharacter::OnBeginOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = true;
-		//UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = true;
-		//UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Right"))
 	}
 }
 
@@ -110,12 +107,10 @@ void AABCharacter::OnEndOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = false;
-		//UE_LOG(LogTemp, Warning, TEXT("End Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = false;
-		//UE_LOG(LogTemp, Warning, TEXT("End Overlapping Right"))
 	}
 }
 
@@ -471,16 +466,16 @@ void AABCharacter::CallCorrectDropEvent(UGripMotionControllerComponent* Hand)
 
 	if (IsLocalGripOrDropEvent(GrippedObjects[0]))
 	{
-		TryDropAll(EHand);
+		DropAll(EHand);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Server Drop All:: TODO untested"));
-		ServerTryDropAll(EHand);
+		ServerDropAll(EHand);
 	}
 }
 
-void AABCharacter::TryDropAll(EControllerHand EHand)
+void AABCharacter::DropAll(EControllerHand EHand)
 {
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 
@@ -535,12 +530,12 @@ bool AABCharacter::CanPutInInventory(AActor* Actor)
 	return false;
 }
 
-void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
+void AABCharacter::ServerDropAll_Implementation(EControllerHand EHand)
 {
-	TryDropAll(EHand);
+	DropAll(EHand);
 }
 
-bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
+bool AABCharacter::ServerDropAll_Validate(EControllerHand EHand)
 {
 	return true;
 }
@@ -789,6 +784,8 @@ void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& Damag
 	bTearOff = true;
 	bIsDying = true;
 
+	DropAll(EControllerHand::Left);
+	DropAll(EControllerHand::Right);
 	//TODOS
 
 }
@@ -805,9 +802,7 @@ void AABCharacter::OnRep_LastTakeHitInfo()
 	}
 }
 
-
 //FTakeHitInfo
-
 FTakeHitInfo::FTakeHitInfo()
 	: ActualDamage(0)
 	, DamageTypeClass(NULL)

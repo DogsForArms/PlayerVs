@@ -54,6 +54,7 @@ protected:
 
 private:	
 
-	
+	class AActor* Gun;
+	class APawn* GunOwner;
 	
 };

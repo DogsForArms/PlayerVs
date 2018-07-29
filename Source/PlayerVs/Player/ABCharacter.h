@@ -216,10 +216,10 @@ public:
 	void CallCorrectDropEvent(UGripMotionControllerComponent* Hand);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerTryDropAll(EControllerHand EHand);
+	void ServerDropAll(EControllerHand EHand);
 
 	UFUNCTION()
-	void TryDropAll(EControllerHand EHand);
+	void DropAll(EControllerHand EHand);
 
 	UFUNCTION()
 	bool CanPutInInventory(AActor* Actor);

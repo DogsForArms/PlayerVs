@@ -58,15 +58,16 @@ void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLi
 	DOREPLIFETIME(ABulletBase, bExploded);
 }
 
-void ABulletBase::InitializeBullet(float Velocity, AActor* Gun)
+void ABulletBase::InitializeBullet(float Velocity, AActor* FromGun)
 {
 	if (!MovementComp)
 	{
 		return;
 	}
 
-	AActor* GunOwner = Gun->GetOwner();
-	UE_LOG(LogTemp, Warning, TEXT("InitializeBullet, gunOwner (%s) is %s"), *Gun->GetName(),*GunOwner->GetName())
+	Gun = FromGun;
+	GunOwner = Cast<APawn>(Gun->GetOwner());
+
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
 	CollisionComp->MoveIgnoreActors.Add(Gun);
@@ -92,7 +93,7 @@ void ABulletBase::OnImpact(const FHitResult& Impact)
 		//PointDmg.ShotDirection = ShootDir;
 		PointDmg.Damage = HitDamage;
 
-		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, NULL, this);
+		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
 	}
 }
 
