@@ -31,6 +31,12 @@ class PLAYERVS_API ABulletBase : public AActor
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* ImpactSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
+	int32 HitDamage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
+	TSubclassOf<UDamageType> DamageType;
+
 public:	
 	// Sets default values for this actor's properties
 	ABulletBase();

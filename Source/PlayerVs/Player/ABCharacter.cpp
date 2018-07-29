@@ -13,6 +13,7 @@
 #include "Actors/GunBase.h"
 #include "PlayerVs.h"
 #include "Net/UnrealNetwork.h"
+#include "Online/ABGameMode.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -51,10 +52,20 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	Health = 100.f;
 }
 
+void AABCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
+{
+	Super::PreReplication(ChangedPropertyTracker);
+
+	// Only replicate this property for a short duration after it changes so join in progress players don't get spammed with fx when joining late
+	DOREPLIFETIME_ACTIVE_OVERRIDE(AABCharacter, LastTakeHitInfo, GetWorld() && GetWorld()->GetTimeSeconds() < LastTakeHitTimeTimeout);
+}
+
 void AABCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AABCharacter, Health);
+
+	DOREPLIFETIME_CONDITION(AABCharacter, LastTakeHitInfo, COND_Custom);
 }
 
 
@@ -685,14 +696,174 @@ bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 //////////////////////////////////////////////////////////////////////////
 // Health Methods
 
-void AABCharacter::Damage(float Damage)
+
+/** Take damage, handle death */
+float AABCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Health -= Damage;
-	//Listen server manual OnRep call.
-	OnRep_Health(); 
+
+	// Modify based on game rules.
+	//AShooterGameMode* const Game = GetWorld()->GetAuthGameMode<AABGameMode>();
+	//Damage = Game ? Game->ModifyDamage(Damage, this, DamageEvent, EventInstigator, DamageCauser) : 0.f;
+
+	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+
+	if (Health <= 0)
+	{
+		Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
+	}
+	else
+	{
+		PlayHit(ActualDamage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
+	}
+
+	return Damage;
+}
+
+bool AABCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser)
+{
+	if (!CanDie(KillingDamage, DamageEvent, Killer, DamageCauser))
+	{
+		return false;
+	}
+
+	Health = FMath::Min(0.0f, Health);
+
+	// if this is an environmental death then refer to the previous killer so that they receive credit (knocked into lava pits, etc)
+	UDamageType const* const DamageType = DamageEvent.DamageTypeClass ? DamageEvent.DamageTypeClass->GetDefaultObject<UDamageType>() : GetDefault<UDamageType>();
+	Killer = GetDamageInstigator(Killer, *DamageType);
+
+	// TODO tell game mode about kill
+	//AController* const KilledPlayer = (Controller != NULL) ? Controller : Cast<AController>(GetOwner());
+	//GetWorld()->GetAuthGameMode<AABGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
+
+//	NetUpdateFrequency = GetDefault<AABCharacter>()->NetUpdateFrequency;
+	GetCharacterMovement()->ForceReplicationUpdate();
+
+	OnDeath(KillingDamage, DamageEvent, Killer ? Killer->GetPawn() : NULL, DamageCauser);
+	return true;
+}
+
+bool AABCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser) const
+{
+	if (bIsDying
+		|| Role != ROLE_Authority)
+	{
+		return false;
+	}
+	return true;
 }
 
 void AABCharacter::OnRep_Health()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Health is %f"), Health)
+}
+
+void AABCharacter::KilledBy(APawn* EventInstigator)
+{
+	if (Role == ROLE_Authority && !bIsDying)
+	{
+		AController* Killer = NULL;
+		if (EventInstigator != NULL)
+		{
+			Killer = EventInstigator->Controller;
+			LastHitBy = NULL;
+		}
+
+		Die(Health, FDamageEvent(UDamageType::StaticClass()), Killer, NULL);
+	}
+}
+
+void AABCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
+{
+	//TODOS
+}
+
+void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
+{
+	if (bIsDying)
+	{
+		return;
+	}
+	bReplicateMovement = false;
+	bTearOff = true;
+	bIsDying = true;
+
+	//TODOS
+
+}
+
+void AABCharacter::OnRep_LastTakeHitInfo()
+{
+	if (LastTakeHitInfo.bKilled)
+	{
+		OnDeath(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
+	}
+	else
+	{
+		PlayHit(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
+	}
+}
+
+
+//FTakeHitInfo
+
+FTakeHitInfo::FTakeHitInfo()
+	: ActualDamage(0)
+	, DamageTypeClass(NULL)
+	, PawnInstigator(NULL)
+	, DamageCauser(NULL)
+	, DamageEventClassID(0)
+	, bKilled(false)
+	, EnsureReplicationByte(0)
+{}
+
+FDamageEvent& FTakeHitInfo::GetDamageEvent()
+{
+	switch (DamageEventClassID)
+	{
+	case FPointDamageEvent::ClassID:
+		if (PointDamageEvent.DamageTypeClass == NULL)
+		{
+			PointDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return PointDamageEvent;
+
+	case FRadialDamageEvent::ClassID:
+		if (RadialDamageEvent.DamageTypeClass == NULL)
+		{
+			RadialDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return RadialDamageEvent;
+
+	default:
+		if (GeneralDamageEvent.DamageTypeClass == NULL)
+		{
+			GeneralDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return GeneralDamageEvent;
+	}
+}
+
+void FTakeHitInfo::SetDamageEvent(const FDamageEvent& DamageEvent)
+{
+	DamageEventClassID = DamageEvent.GetTypeID();
+	switch (DamageEventClassID)
+	{
+	case FPointDamageEvent::ClassID:
+		PointDamageEvent = *((FPointDamageEvent const*)(&DamageEvent));
+		break;
+	case FRadialDamageEvent::ClassID:
+		RadialDamageEvent = *((FRadialDamageEvent const*)(&DamageEvent));
+		break;
+	default:
+		GeneralDamageEvent = DamageEvent;
+	}
+
+	DamageTypeClass = DamageEvent.DamageTypeClass;
+}
+
+void FTakeHitInfo::EnsureReplication()
+{
+	EnsureReplicationByte++;
 }

@@ -47,6 +47,9 @@ ABulletBase::ABulletBase()
 	SetRemoteRoleForBackwardsCompat(ROLE_SimulatedProxy);
 	bReplicates = true;
 	bReplicateMovement = true;
+
+	HitDamage = 50.f;
+	DamageType = UDamageType::StaticClass();
 }
 
 void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
@@ -61,6 +64,9 @@ void ABulletBase::InitializeBullet(float Velocity, AActor* Gun)
 	{
 		return;
 	}
+
+	AActor* GunOwner = Gun->GetOwner();
+	UE_LOG(LogTemp, Warning, TEXT("InitializeBullet, gunOwner (%s) is %s"), *Gun->GetName(),*GunOwner->GetName())
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
 	CollisionComp->MoveIgnoreActors.Add(Gun);
@@ -73,19 +79,20 @@ void ABulletBase::PostInitializeComponents()
 	SetLifeSpan(10.0f);
 }
 
-void ABulletBase::OnImpact(const FHitResult& HitResult)
+void ABulletBase::OnImpact(const FHitResult& Impact)
 {
 	if (Role == ROLE_Authority && !bExploded)
 	{
 		bExploded = true;
 		OnRep_Exploded();
 
-		AABCharacter *HitCharacter = Cast<AABCharacter>(HitResult.GetActor());
-		if (HitCharacter)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Character, component %s"), *HitResult.GetComponent()->GetName())
-			HitCharacter->Damage(50.f);
-		}
+		FPointDamageEvent PointDmg;
+		PointDmg.DamageTypeClass = DamageType;
+		PointDmg.HitInfo = Impact;
+		//PointDmg.ShotDirection = ShootDir;
+		PointDmg.Damage = HitDamage;
+
+		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, NULL, this);
 	}
 }
 
