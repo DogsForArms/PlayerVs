@@ -44,6 +44,30 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 	Body->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 	Body->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
 
+	Head = CreateDefaultSubobject<UStaticMeshComponent>("Head");
+	Head->SetupAttachment(VRReplicatedCamera);
+	Head->SetGenerateOverlapEvents(false);
+	Head->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	Head->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
+
+	LeftHandMesh = CreateDefaultSubobject<UStaticMeshComponent>("LeftHandMesh");
+	LeftHandMesh->SetGenerateOverlapEvents(false);
+	LeftHandMesh->SetupAttachment(LeftMotionController);
+	LeftHandMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	RightHandMesh = CreateDefaultSubobject<UStaticMeshComponent>("RightHandMesh");
+	RightHandMesh->SetGenerateOverlapEvents(false);
+	RightHandMesh->SetupAttachment(RightMotionController);
+	RightHandMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	LeftHandGrabArea = CreateDefaultSubobject<USphereComponent>("LeftHandGrab");
+	LeftHandGrabArea->SetSphereRadius(8.f);
+	LeftHandGrabArea->SetupAttachment(LeftMotionController);
+
+	RightHandGrabArea = CreateDefaultSubobject<USphereComponent>("RightHandGrab");
+	RightHandGrabArea->SetSphereRadius(8.f);
+	RightHandGrabArea->SetupAttachment(RightMotionController);
+
 	VRRootReference->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 	VRRootReference->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
 
@@ -65,13 +89,6 @@ void AABCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AABCharacter, Health);
 	DOREPLIFETIME_CONDITION(AABCharacter, LastTakeHitInfo, COND_Custom);
-}
-
-
-void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
-{
-	LeftHandGrabArea = LeftGrab;
-	RightHandGrabArea = RightGrab;
 }
 
 void AABCharacter::BeginPlay()
@@ -676,7 +693,7 @@ UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand E
 
 bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 {
-	EGripMovementReplicationSettings GripRepType = EGripMovementReplicationSettings::KeepOriginalMovement;
+	EGripMovementReplicationSettings GripRepType = EGripMovementReplicationSettings::ForceClientSideMovement;
 	IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(ObjectToGrip);
 	if (GrippableComponent)
 	{
@@ -780,14 +797,27 @@ void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& Damag
 	{
 		return;
 	}
+
 	bReplicateMovement = false;
 	bTearOff = true;
 	bIsDying = true;
 
-	DropAll(EControllerHand::Left);
-	DropAll(EControllerHand::Right);
-	//TODOS
+	if (Role == ROLE_Authority)
+	{
+		ReplicateHit(KillingDamage, DamageEvent, PawnInstigator, DamageCauser, true);
 
+		DropAll(EControllerHand::Left);
+		DropAll(EControllerHand::Right);
+	}
+	//TODOS
+	SetActorEnableCollision(true);
+	Body->SetSimulatePhysics(true);
+	Head->SetSimulatePhysics(true);
+
+	LeftHandMesh->SetSimulatePhysics(true);
+	RightHandMesh->SetSimulatePhysics(true);
+
+	DetachFromControllerPendingDestroy();
 }
 
 void AABCharacter::OnRep_LastTakeHitInfo()
@@ -800,6 +830,34 @@ void AABCharacter::OnRep_LastTakeHitInfo()
 	{
 		PlayHit(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
 	}
+}
+
+void AABCharacter::ReplicateHit(float Damage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser, bool bKilled)
+{
+	const float TimeoutTime = GetWorld()->GetTimeSeconds() + 0.5f;
+
+	FDamageEvent const& LastDamageEvent = LastTakeHitInfo.GetDamageEvent();
+	if ((PawnInstigator == LastTakeHitInfo.PawnInstigator.Get()) && (LastDamageEvent.DamageTypeClass == LastTakeHitInfo.DamageTypeClass) && (LastTakeHitTimeTimeout == TimeoutTime))
+	{
+		// same frame damage
+		if (bKilled && LastTakeHitInfo.bKilled)
+		{
+			// Redundant death take hit, just ignore it
+			return;
+		}
+
+		// otherwise, accumulate damage done this frame
+		Damage += LastTakeHitInfo.ActualDamage;
+	}
+
+	LastTakeHitInfo.ActualDamage = Damage;
+	LastTakeHitInfo.PawnInstigator = Cast<AABCharacter>(PawnInstigator);
+	LastTakeHitInfo.DamageCauser = DamageCauser;
+	LastTakeHitInfo.SetDamageEvent(DamageEvent);
+	LastTakeHitInfo.bKilled = bKilled;
+	LastTakeHitInfo.EnsureReplication();
+
+	LastTakeHitTimeTimeout = TimeoutTime;
 }
 
 //FTakeHitInfo

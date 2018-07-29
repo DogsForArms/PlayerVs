@@ -115,24 +115,11 @@ public: //Initialization
 
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	void InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab);
+	UFUNCTION()
+	void OnBeginOverlapHolster(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-	void OnBeginOverlapHolster(
-		UPrimitiveComponent* OverlappedComp,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnEndOverlapHolster(
-		UPrimitiveComponent* OverlappedComponent, 
-		AActor* OtherActor, 
-		UPrimitiveComponent* OtherComp, 
-		int32 OtherBodyIndex);
+	void OnEndOverlapHolster(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	bool HandIsInHolster(UGripMotionControllerComponent* Hand);
 
@@ -142,11 +129,6 @@ public: //Initialization
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY()
-	USphereComponent* LeftHandGrabArea;
-	UPROPERTY()
-	USphereComponent* RightHandGrabArea;
-
 	bool bLeftHandIsInHolster;
 	bool bRightHandIsInHolster;
 
@@ -155,6 +137,22 @@ public: //Initialization
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
 	UStaticMeshComponent* Body;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	UStaticMeshComponent* Head;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	UStaticMeshComponent* LeftHandMesh;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	UStaticMeshComponent* RightHandMesh;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	USphereComponent* LeftHandGrabArea;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
+	USphereComponent* RightHandGrabArea;
+
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
