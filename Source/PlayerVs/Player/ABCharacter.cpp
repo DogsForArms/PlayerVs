@@ -316,6 +316,9 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
 {
+	if (bIsDying)
+		return;
+
 	EControllerHand HandType;
 	Hand->GetHandType(HandType);
 
@@ -810,14 +813,13 @@ void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& Damag
 		DropAll(EControllerHand::Right);
 	}
 	//TODOS
-	SetActorEnableCollision(true);
 	Body->SetSimulatePhysics(true);
 	Head->SetSimulatePhysics(true);
 
 	LeftHandMesh->SetSimulatePhysics(true);
 	RightHandMesh->SetSimulatePhysics(true);
 
-	DetachFromControllerPendingDestroy();
+	//DetachFromControllerPendingDestroy();
 }
 
 void AABCharacter::OnRep_LastTakeHitInfo()
