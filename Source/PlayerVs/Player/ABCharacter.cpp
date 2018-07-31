@@ -802,7 +802,7 @@ void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& Damag
 	}
 
 	bReplicateMovement = false;
-	bTearOff = true;
+	TearOff();
 	bIsDying = true;
 
 	if (Role == ROLE_Authority)
