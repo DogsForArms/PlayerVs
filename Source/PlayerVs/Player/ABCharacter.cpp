@@ -749,8 +749,8 @@ bool AABCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, ACo
 	Killer = GetDamageInstigator(Killer, *DamageType);
 
 	// TODO tell game mode about kill
-	//AController* const KilledPlayer = (Controller != NULL) ? Controller : Cast<AController>(GetOwner());
-	//GetWorld()->GetAuthGameMode<AABGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
+	AController* const KilledPlayer = (Controller != NULL) ? Controller : Cast<AController>(GetOwner());
+	GetWorld()->GetAuthGameMode<AABGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
 
 //	NetUpdateFrequency = GetDefault<AABCharacter>()->NetUpdateFrequency;
 	GetCharacterMovement()->ForceReplicationUpdate();

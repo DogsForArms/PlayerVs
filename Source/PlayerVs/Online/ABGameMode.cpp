@@ -117,3 +117,24 @@ void AABGameMode::UnassignedToInnocent()
 		}
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Game Logic 
+
+void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
+{
+	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
+	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
+
+	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
+	{
+		//KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
+		//KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
+	}
+
+	if (VictimPlayerState)
+	{
+		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
+		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
+	}
+}

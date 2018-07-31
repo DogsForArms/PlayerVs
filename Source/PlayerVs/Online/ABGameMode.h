@@ -7,6 +7,8 @@
 #include "ABGameMode.generated.h"
 
 class AABGameState;
+class AController;
+class APawn;
 
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
@@ -29,6 +31,8 @@ class PLAYERVS_API AABGameMode : public AGameMode
 
 	/** update remaining time */
 	virtual void DefaultTimer();
+
+	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
 	
 protected:
 	/** Handle for efficient management of DefaultTimer timer */

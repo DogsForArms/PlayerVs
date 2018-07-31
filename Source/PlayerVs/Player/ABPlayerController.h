@@ -32,15 +32,12 @@ public:
 
 	UFUNCTION(Reliable, Client, BlueprintCallable)
 	void InitiatePlay();
-	void InitiatePlay_Implementation();
 
 	UFUNCTION()
 	void InitiateHMD();
 
 	UFUNCTION(Reliable, Server, WithValidation)
 	void InitiatePlayHelperServer(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
-	void InitiatePlayHelperServer_Implementation(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
-	bool InitiatePlayHelperServer_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Initialization")
 	TSubclassOf<class UPlayerWidget> PlayerWidgetTemplate;
