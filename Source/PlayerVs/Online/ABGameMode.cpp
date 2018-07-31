@@ -3,6 +3,7 @@
 #include "Online/ABGameMode.h"
 #include "Online/ABGameState.h"
 #include "Player/ABCharacter.h"
+#include "Player/TestSpectatorPawn.h"
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
 #include "GameFramework/PlayerStart.h"
@@ -158,13 +159,10 @@ void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnab
 	Controller->Possess(Character);
 }
 
-void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
-{
-
-}
-
 void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
 {
+	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
+
 	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
 	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
 
@@ -179,6 +177,24 @@ void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* 
 		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
 		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
 	}
+
+	ControllerNeedsSpectator(KilledPC, KilledPC->HMDEnable, KilledPC->HMDOffset, KilledPC->HMDRotation);
 }
 
+void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	ATestSpectatorPawn* Spectator;
 
+	FTransform SpawnTransform;
+	FActorSpawnParameters SpawnInfo;
+	if (VRSpectatorPawn && HMDEnabled)
+	{
+		Spectator = GetWorld()->SpawnActor<ATestSpectatorPawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FPS or VR Spectator templates are not set properly."))
+		return;
+	}
+	Controller->Possess(Spectator);
+}
