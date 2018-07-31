@@ -23,33 +23,38 @@ class PLAYERVS_API AABPlayerController : public AVRPlayerController
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
-	/** replicate team.  TODO Updated the players hud*/
 	UFUNCTION()
 	void OnRep_Team();
 
-public: 
-	AABPlayerController();
-
-	UFUNCTION(Reliable, Client, BlueprintCallable)
+	UFUNCTION()
 	void InitiatePlay();
 
 	UFUNCTION()
 	void InitiateHMD();
 
 	UFUNCTION(Reliable, Server, WithValidation)
-	void InitiatePlayHelperServer(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+	void ServerSetHMDConfig(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+
+	UFUNCTION()
+	void SetHMDConfig(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+
+public: 
+	AABPlayerController();
+
+	UPROPERTY()
+	bool HMDEnable;
+
+	UPROPERTY()
+	FVector HMDOffset;
+		
+	UPROPERTY()
+	FRotator HMDRotation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Initialization")
 	TSubclassOf<class UPlayerWidget> PlayerWidgetTemplate;
 
 	UPROPERTY()
 	class UPlayerWidget* PlayerWidget;
-
-	UPROPERTY(EditAnywhere, Category = "Initialization")
-	TSubclassOf<class AABCharacter> FPSCharacterTemplate;
-
-	UPROPERTY(EditAnywhere, Category = "Initialization")
-	TSubclassOf<class AABCharacter> VRCharacterTemplate;
 
 	void ServerSetTeam(ETeam Value);
 

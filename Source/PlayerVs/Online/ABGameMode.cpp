@@ -1,10 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Online/ABGameMode.h"
+#include "Online/ABGameState.h"
 #include "Player/ABCharacter.h"
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
-#include "Online/ABGameState.h"
+#include "GameFramework/PlayerStart.h"
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -51,12 +52,10 @@ void AABGameMode::PostLogin(APlayerController * NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
-	NewPC->InitiatePlay();
 	//if (NewPC && NewPC->GetPawn() == NULL)
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("NewPlayer joined and no pawn."))
 	//}
-
 
 }
 
@@ -121,6 +120,49 @@ void AABGameMode::UnassignedToInnocent()
 //////////////////////////////////////////////////////////////////////////
 // Game Logic 
 
+void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	FTransform SpawnTransform;
+
+	TArray<AActor*> Spawns;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);
+	if (!Spawns.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
+	}
+	else
+	{
+		int PlayerStartIndex = FMath::FRandRange(0, Spawns.Num() - 1);
+		AActor *Spawn = Spawns[PlayerStartIndex];
+		SpawnTransform = Spawn->GetActorTransform();
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	AABCharacter *Character;
+	if (!HMDEnabled && FPSCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnTransform, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn FPSCharacterTemplate"))
+	}
+	else if (VRCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnTransform, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn VRCharacterTemplate"))
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FPS or VR Character templates are not set properly."))
+			return;
+	}
+
+	Controller->Possess(Character);
+}
+
+void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+
+}
+
 void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
 {
 	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
@@ -138,3 +180,5 @@ void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* 
 		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
 	}
 }
+
+
