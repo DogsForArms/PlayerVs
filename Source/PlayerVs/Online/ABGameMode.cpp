@@ -182,9 +182,11 @@ void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* 
 
 void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
-	APawn* Spectator;
-
 	FTransform SpawnTransform;
+	if (Controller->GetPawn())
+		SpawnTransform = Controller->GetPawn()->GetActorTransform();
+
+	APawn* Spectator;
 	FActorSpawnParameters SpawnInfo;
 	if (VRSpectatorPawn && HMDEnabled)
 	{
@@ -195,5 +197,6 @@ void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnab
 		UE_LOG(LogTemp, Error, TEXT("FPS or VR Spectator templates are not set properly."))
 		return;
 	}
+
 	Controller->Possess(Spectator);
 }
