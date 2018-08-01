@@ -10,7 +10,6 @@ class AABCharacter;
 class AABGameState;
 class AController;
 class APawn;
-class ATestSpectatorPawn;
 
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
@@ -70,5 +69,5 @@ public:
 	TSubclassOf<AABCharacter> VRCharacterTemplate;
 
 	UPROPERTY(EditAnywhere, Category = "Initialization")
-	TSubclassOf<ATestSpectatorPawn> VRSpectatorPawn;
+	TSubclassOf<APawn> VRSpectatorPawn;
 };

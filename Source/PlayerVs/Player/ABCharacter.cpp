@@ -17,8 +17,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
-AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	GripTraceLength = 1.f;
 

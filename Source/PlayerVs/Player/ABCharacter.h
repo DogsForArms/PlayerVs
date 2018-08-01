@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "VRCharacter.h"
+#include "Player/ABCharacterBase.h"
 #include "ABCharacter.generated.h"
 /**
  * 
@@ -102,7 +102,7 @@ public:
 };
 
 UCLASS()
-class PLAYERVS_API AABCharacter : public AVRCharacter
+class PLAYERVS_API AABCharacter : public AABCharacterBase
 {
 	GENERATED_BODY()
 

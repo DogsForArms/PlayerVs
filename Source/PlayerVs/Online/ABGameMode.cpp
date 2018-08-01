@@ -3,7 +3,6 @@
 #include "Online/ABGameMode.h"
 #include "Online/ABGameState.h"
 #include "Player/ABCharacter.h"
-#include "Player/TestSpectatorPawn.h"
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
 #include "GameFramework/PlayerStart.h"
@@ -183,13 +182,13 @@ void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* 
 
 void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
-	ATestSpectatorPawn* Spectator;
+	APawn* Spectator;
 
 	FTransform SpawnTransform;
 	FActorSpawnParameters SpawnInfo;
 	if (VRSpectatorPawn && HMDEnabled)
 	{
-		Spectator = GetWorld()->SpawnActor<ATestSpectatorPawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
+		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
 	}
 	else
 	{
