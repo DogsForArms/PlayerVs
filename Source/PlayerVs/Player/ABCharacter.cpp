@@ -217,10 +217,10 @@ void AABCharacter::DebugVoice(bool bDropVoice, bool bLoopback)
 void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("ForwardRH", this, &AABCharacter::MoveForwardRH);
-	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRightRH);
-	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveForwardLH);
-	PlayerInputComponent->BindAxis("RightLH", this, &AABCharacter::MoveRightLH);
+	PlayerInputComponent->BindAxis("ForwardRH", this, &AABCharacter::MoveRH);
+	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRH);
+	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveLH);
+	PlayerInputComponent->BindAxis("RightLH", this, &AABCharacter::MoveLH);
 
 	PlayerInputComponent->BindAction("GrabLeft", IE_Pressed, this, &AABCharacter::GrabLeft);
 	PlayerInputComponent->BindAction("GrabRight", IE_Pressed, this, &AABCharacter::GrabRight);
@@ -601,42 +601,27 @@ void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand, bool bPressed
 //////////////////////////////////////////////////////////////////////////
 // Input - DPad Movement
 
-void AABCharacter::MoveRightRH(float Value)
+void AABCharacter::MoveRH(float Value)
 {
-	float Forward = GetInputAxisValue(FName("ForwardRH"));
-	float Right = GetInputAxisValue(FName("RightRH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), RightMotionController);
+	ApplyMovement(RightMotionController);
 }
 
-void AABCharacter::MoveRightLH(float Value)
+void AABCharacter::MoveLH(float Value)
 {
-	float Forward = GetInputAxisValue(FName("ForwardLH"));
-	float Right = GetInputAxisValue(FName("RightLH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), LeftMotionController);
+	ApplyMovement(LeftMotionController);
 }
 
-void AABCharacter::MoveForwardRH(float Value)
+void AABCharacter::ApplyMovement(UGripMotionControllerComponent* Hand)
 {
-	MoveRightRH(0);
-}
-
-void AABCharacter::MoveForwardLH(float Value)
-{
-	MoveRightLH(0);
-}
-
-void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand)
-{
-	bool HMDEnabled = UVRExpansionFunctionLibrary::GetIsHMDConnected() && UVRExpansionFunctionLibrary::IsInVREditorPreviewOrGame();
-
-	if (!HMDEnabled) {
+	float Right, Forward;
+	if (!GetMovementAxisForHand(Right, Forward, Hand))
 		return;
-	}
-	FVector Up = FVector(0, 0, 1.f);
-	FVector Forward = FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal();
-	FVector Right = FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal();
-	FVector Direction = (Forward * DPadDirection.Y + Right * DPadDirection.X);
 
+	FVector Up = FVector(0, 0, 1.f);
+	FVector Direction = (
+		Forward * FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal() +
+		  Right * FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal()
+	);
 	GetMovementComponent()->AddInputVector(Direction, false);
 }
 

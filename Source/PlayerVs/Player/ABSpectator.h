@@ -34,9 +34,4 @@ public:
 	void MoveLH(float Value);
 
 	virtual void ApplyMovement(UGripMotionControllerComponent* Hand);
-
-
-protected:
-	//Reuse
-	void GetMovementAxisForHand(float& Right, float& Forward, UMotionControllerComponent* Hand);
 };

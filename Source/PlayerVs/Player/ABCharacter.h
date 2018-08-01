@@ -235,11 +235,9 @@ public:
 
 	void ClientUse(UGripMotionControllerComponent* Hand, bool bPressed);
 
-	void MoveForwardRH(float Value);
-	void MoveRightRH(float Value);
-	void MoveForwardLH(float Value);
-	void MoveRightLH(float Value);
-	void AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand);
+	void MoveRH(float Value);
+	void MoveLH(float Value);
+	void ApplyMovement(UGripMotionControllerComponent* Hand);
 
 private:
 	UFUNCTION()

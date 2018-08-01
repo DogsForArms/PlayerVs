@@ -40,19 +40,11 @@ void AABSpectator::MoveLH(float Value)
 void AABSpectator::ApplyMovement(UGripMotionControllerComponent* Hand)
 {
 	float Right, Forward;
-	GetMovementAxisForHand(Right, Forward, Hand);
+	if (!GetMovementAxisForHand(Right, Forward, Hand))
+		return;
 
 	FVector Direction = Right * Hand->GetRightVector() + Forward * Hand->GetForwardVector();
-	UE_LOG(LogTemp, Warning, TEXT("Direction = %s"), *Direction.ToString())
-
 	GetMovementComponent()->AddInputVector(Direction, false);
-}
-
-void AABSpectator::GetMovementAxisForHand(float& Right, float& Forward, UMotionControllerComponent* Hand)
-{
-	bool bIsRight = Hand == RightMotionController;
-	Right = GetInputAxisValue(bIsRight ? FName("RightRH") : FName("RightLH"));
-	Forward = GetInputAxisValue(bIsRight ? FName("ForwardRH") : FName("ForwardLH"));
 }
 
 void AABSpectator::PossessedBy(class AController* NewController)

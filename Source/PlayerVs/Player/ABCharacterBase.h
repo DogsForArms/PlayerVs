@@ -17,5 +17,7 @@ class PLAYERVS_API AABCharacterBase : public AVRCharacter
 public:
 	AABCharacterBase(const FObjectInitializer& ObjectInitializer);
 	
-	
+protected:
+	UFUNCTION()
+	bool GetMovementAxisForHand(float& Right, float& Forward, UMotionControllerComponent* Hand);
 };
