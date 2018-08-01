@@ -1,10 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Online/ABGameMode.h"
+#include "Online/ABGameState.h"
 #include "Player/ABCharacter.h"
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
-#include "Online/ABGameState.h"
+#include "GameFramework/PlayerStart.h"
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -51,12 +52,10 @@ void AABGameMode::PostLogin(APlayerController * NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
-	NewPC->InitiatePlay();
 	//if (NewPC && NewPC->GetPawn() == NULL)
 	//{
 	//	UE_LOG(LogTemp, Warning, TEXT("NewPlayer joined and no pawn."))
 	//}
-
 
 }
 
@@ -116,4 +115,88 @@ void AABGameMode::UnassignedToInnocent()
 			PS->ServerSetTeam(ETeam::Innocent);
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Game Logic 
+
+void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	FTransform SpawnTransform;
+
+	TArray<AActor*> Spawns;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);
+	if (!Spawns.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("No PlayerStart found."))
+	}
+	else
+	{
+		int PlayerStartIndex = FMath::FRandRange(0, Spawns.Num() - 1);
+		AActor *Spawn = Spawns[PlayerStartIndex];
+		SpawnTransform = Spawn->GetActorTransform();
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	AABCharacter *Character;
+	if (!HMDEnabled && FPSCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(FPSCharacterTemplate, SpawnTransform, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn FPSCharacterTemplate"))
+	}
+	else if (VRCharacterTemplate)
+	{
+		Character = GetWorld()->SpawnActor<AABCharacter>(VRCharacterTemplate, SpawnTransform, SpawnInfo);
+		UE_LOG(LogTemp, Warning, TEXT("Spawn VRCharacterTemplate"))
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FPS or VR Character templates are not set properly."))
+			return;
+	}
+
+	Controller->Possess(Character);
+}
+
+void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
+{
+	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
+
+	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
+	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
+
+	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
+	{
+		//KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
+		//KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
+	}
+
+	if (VictimPlayerState)
+	{
+		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
+		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
+	}
+
+	ControllerNeedsSpectator(KilledPC, KilledPC->HMDEnable, KilledPC->HMDOffset, KilledPC->HMDRotation);
+}
+
+void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+{
+	FTransform SpawnTransform;
+	if (Controller->GetPawn())
+		SpawnTransform = Controller->GetPawn()->GetActorTransform();
+
+	APawn* Spectator;
+	FActorSpawnParameters SpawnInfo;
+	if (VRSpectatorPawn && HMDEnabled)
+	{
+		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FPS or VR Spectator templates are not set properly."))
+		return;
+	}
+
+	Controller->Possess(Spectator);
 }

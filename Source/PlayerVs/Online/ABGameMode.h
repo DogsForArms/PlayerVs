@@ -6,7 +6,10 @@
 #include "GameFramework/GameMode.h"
 #include "ABGameMode.generated.h"
 
+class AABCharacter;
 class AABGameState;
+class AController;
+class APawn;
 
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
@@ -47,4 +50,24 @@ protected:
 		PlayerStates that Unassigned will be set to Innocent
 	*/
 	void UnassignedToInnocent();
+
+public:
+
+	UFUNCTION()
+	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
+
+	UFUNCTION()
+	virtual void ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+
+	UFUNCTION()
+	virtual void ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
+
+	UPROPERTY(EditAnywhere, Category = "Initialization")
+	TSubclassOf<AABCharacter> FPSCharacterTemplate;
+
+	UPROPERTY(EditAnywhere, Category = "Initialization")
+	TSubclassOf<AABCharacter> VRCharacterTemplate;
+
+	UPROPERTY(EditAnywhere, Category = "Initialization")
+	TSubclassOf<APawn> VRSpectatorPawn;
 };

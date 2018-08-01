@@ -11,13 +11,16 @@
 #include "Online/SteamHandler.h"
 #include "GameFramework/PlayerController.h"
 #include "Actors/GunBase.h"
+#include "PlayerVs.h"
+#include "Net/UnrealNetwork.h"
+#include "Online/ABGameMode.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
-AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	GripTraceLength = 1.f;
+
 	Talker = CreateDefaultSubobject<UVOIPTalker>("Talker");
 	WidgetInteractionLeft = CreateDefaultSubobject<UWidgetInteractionComponent>("WidgetInteractionLeft");
 	WidgetInteractionLeft->SetupAttachment(LeftMotionController);
@@ -29,21 +32,62 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer)
 
 	HolsterArea->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	HolsterArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly); //Just Query?
+	HolsterArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	HolsterArea->SetGenerateOverlapEvents(true);
 	HolsterArea->OnComponentBeginOverlap.AddDynamic(this, &AABCharacter::OnBeginOverlapHolster);
 	HolsterArea->OnComponentEndOverlap.AddDynamic(this, &AABCharacter::OnEndOverlapHolster);
 
 	Body = CreateDefaultSubobject<UStaticMeshComponent>("Body");
 	Body->SetupAttachment(ParentRelativeAttachment);
+	Body->SetGenerateOverlapEvents(false);
+	Body->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	Body->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
+
+	Head = CreateDefaultSubobject<UStaticMeshComponent>("Head");
+	Head->SetupAttachment(VRReplicatedCamera);
+	Head->SetGenerateOverlapEvents(false);
+	Head->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	Head->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Block);
+
+	LeftHandMesh = CreateDefaultSubobject<UStaticMeshComponent>("LeftHandMesh");
+	LeftHandMesh->SetGenerateOverlapEvents(false);
+	LeftHandMesh->SetupAttachment(LeftMotionController);
+	LeftHandMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	RightHandMesh = CreateDefaultSubobject<UStaticMeshComponent>("RightHandMesh");
+	RightHandMesh->SetGenerateOverlapEvents(false);
+	RightHandMesh->SetupAttachment(RightMotionController);
+	RightHandMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	LeftHandGrabArea = CreateDefaultSubobject<USphereComponent>("LeftHandGrab");
+	LeftHandGrabArea->SetSphereRadius(8.f);
+	LeftHandGrabArea->SetupAttachment(LeftMotionController);
+
+	RightHandGrabArea = CreateDefaultSubobject<USphereComponent>("RightHandGrab");
+	RightHandGrabArea->SetSphereRadius(8.f);
+	RightHandGrabArea->SetupAttachment(RightMotionController);
+
+	VRRootReference->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	VRRootReference->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
 
 	PrimaryActorTick.bCanEverTick = true;
+
+	Health = 100.f;
 }
 
-void AABCharacter::InitializeHands(USphereComponent* LeftGrab, USphereComponent* RightGrab)
+void AABCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
 {
-	LeftHandGrabArea = LeftGrab;
-	RightHandGrabArea = RightGrab;
+	Super::PreReplication(ChangedPropertyTracker);
+
+	// Only replicate this property for a short duration after it changes so join in progress players don't get spammed with fx when joining late
+	DOREPLIFETIME_ACTIVE_OVERRIDE(AABCharacter, LastTakeHitInfo, GetWorld() && GetWorld()->GetTimeSeconds() < LastTakeHitTimeTimeout);
+}
+
+void AABCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AABCharacter, Health);
+	DOREPLIFETIME_CONDITION(AABCharacter, LastTakeHitInfo, COND_Custom);
 }
 
 void AABCharacter::BeginPlay()
@@ -63,12 +107,10 @@ void AABCharacter::OnBeginOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = true;
-		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = true;
-		UE_LOG(LogTemp, Warning, TEXT("Start Overlapping Right"))
 	}
 }
 
@@ -81,12 +123,10 @@ void AABCharacter::OnEndOverlapHolster(
 	if (OtherComp == LeftHandGrabArea)
 	{
 		bLeftHandIsInHolster = false;
-		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Left"))
 	}
 	else if (OtherComp == RightHandGrabArea)
 	{
 		bRightHandIsInHolster = false;
-		UE_LOG(LogTemp, Warning, TEXT("End Overlapping Right"))
 	}
 }
 
@@ -177,10 +217,10 @@ void AABCharacter::DebugVoice(bool bDropVoice, bool bLoopback)
 void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("ForwardRH", this, &AABCharacter::MoveForwardRH);
-	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRightRH);
-	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveForwardLH);
-	PlayerInputComponent->BindAxis("RightLH", this, &AABCharacter::MoveRightLH);
+	PlayerInputComponent->BindAxis("ForwardRH", this, &AABCharacter::MoveRH);
+	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRH);
+	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveLH);
+	PlayerInputComponent->BindAxis("RightLH", this, &AABCharacter::MoveLH);
 
 	PlayerInputComponent->BindAction("GrabLeft", IE_Pressed, this, &AABCharacter::GrabLeft);
 	PlayerInputComponent->BindAction("GrabRight", IE_Pressed, this, &AABCharacter::GrabRight);
@@ -275,6 +315,9 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 
 void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USphereComponent* GrabArea, UGripMotionControllerComponent* OtherHand)
 {
+	if (bIsDying)
+		return;
+
 	EControllerHand HandType;
 	Hand->GetHandType(HandType);
 
@@ -442,16 +485,16 @@ void AABCharacter::CallCorrectDropEvent(UGripMotionControllerComponent* Hand)
 
 	if (IsLocalGripOrDropEvent(GrippedObjects[0]))
 	{
-		TryDropAll(EHand);
+		DropAll(EHand);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Server Drop All:: TODO untested"));
-		ServerTryDropAll(EHand);
+		ServerDropAll(EHand);
 	}
 }
 
-void AABCharacter::TryDropAll(EControllerHand EHand)
+void AABCharacter::DropAll(EControllerHand EHand)
 {
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 
@@ -506,12 +549,12 @@ bool AABCharacter::CanPutInInventory(AActor* Actor)
 	return false;
 }
 
-void AABCharacter::ServerTryDropAll_Implementation(EControllerHand EHand)
+void AABCharacter::ServerDropAll_Implementation(EControllerHand EHand)
 {
-	TryDropAll(EHand);
+	DropAll(EHand);
 }
 
-bool AABCharacter::ServerTryDropAll_Validate(EControllerHand EHand)
+bool AABCharacter::ServerDropAll_Validate(EControllerHand EHand)
 {
 	return true;
 }
@@ -558,42 +601,27 @@ void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand, bool bPressed
 //////////////////////////////////////////////////////////////////////////
 // Input - DPad Movement
 
-void AABCharacter::MoveRightRH(float Value)
+void AABCharacter::MoveRH(float Value)
 {
-	float Forward = GetInputAxisValue(FName("ForwardRH"));
-	float Right = GetInputAxisValue(FName("RightRH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), RightMotionController);
+	ApplyMovement(RightMotionController);
 }
 
-void AABCharacter::MoveRightLH(float Value)
+void AABCharacter::MoveLH(float Value)
 {
-	float Forward = GetInputAxisValue(FName("ForwardLH"));
-	float Right = GetInputAxisValue(FName("RightLH"));
-	AddDpadMovementInput(FVector2D(Right, Forward), LeftMotionController);
+	ApplyMovement(LeftMotionController);
 }
 
-void AABCharacter::MoveForwardRH(float Value)
+void AABCharacter::ApplyMovement(UGripMotionControllerComponent* Hand)
 {
-	MoveRightRH(0);
-}
-
-void AABCharacter::MoveForwardLH(float Value)
-{
-	MoveRightLH(0);
-}
-
-void AABCharacter::AddDpadMovementInput(FVector2D DPadDirection, UGripMotionControllerComponent* Hand)
-{
-	bool HMDEnabled = UVRExpansionFunctionLibrary::GetIsHMDConnected() && UVRExpansionFunctionLibrary::IsInVREditorPreviewOrGame();
-
-	if (!HMDEnabled) {
+	float Right, Forward;
+	if (!GetMovementAxisForHand(Right, Forward, Hand))
 		return;
-	}
-	FVector Up = FVector(0, 0, 1.f);
-	FVector Forward = FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal();
-	FVector Right = FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal();
-	FVector Direction = (Forward * DPadDirection.Y + Right * DPadDirection.X);
 
+	FVector Up = FVector(0, 0, 1.f);
+	FVector Direction = (
+		Forward * FVector::VectorPlaneProject(Hand->GetForwardVector(), Up).GetSafeNormal() +
+		  Right * FVector::VectorPlaneProject(Hand->GetRightVector(), Up).GetSafeNormal()
+	);
 	GetMovementComponent()->AddInputVector(Direction, false);
 }
 
@@ -652,7 +680,7 @@ UGripMotionControllerComponent* AABCharacter::GetHandReference(EControllerHand E
 
 bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 {
-	EGripMovementReplicationSettings GripRepType = EGripMovementReplicationSettings::KeepOriginalMovement;
+	EGripMovementReplicationSettings GripRepType = EGripMovementReplicationSettings::ForceClientSideMovement;
 	IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(ObjectToGrip);
 	if (GrippableComponent)
 	{
@@ -662,4 +690,219 @@ bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 	return 
 		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive ||
 		GripRepType == EGripMovementReplicationSettings::ClientSide_Authoritive_NoRep;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Health Methods
+
+
+/** Take damage, handle death */
+float AABCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	Health -= Damage;
+
+	// Modify based on game rules.
+	//AShooterGameMode* const Game = GetWorld()->GetAuthGameMode<AABGameMode>();
+	//Damage = Game ? Game->ModifyDamage(Damage, this, DamageEvent, EventInstigator, DamageCauser) : 0.f;
+
+	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+
+	if (Health <= 0)
+	{
+		Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
+	}
+	else
+	{
+		PlayHit(ActualDamage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
+	}
+
+	return Damage;
+}
+
+bool AABCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser)
+{
+	if (!CanDie(KillingDamage, DamageEvent, Killer, DamageCauser))
+	{
+		return false;
+	}
+
+	Health = FMath::Min(0.0f, Health);
+
+	// if this is an environmental death then refer to the previous killer so that they receive credit (knocked into lava pits, etc)
+	UDamageType const* const DamageType = DamageEvent.DamageTypeClass ? DamageEvent.DamageTypeClass->GetDefaultObject<UDamageType>() : GetDefault<UDamageType>();
+	Killer = GetDamageInstigator(Killer, *DamageType);
+
+	// TODO tell game mode about kill
+	AController* const KilledPlayer = (Controller != NULL) ? Controller : Cast<AController>(GetOwner());
+	GetWorld()->GetAuthGameMode<AABGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
+
+//	NetUpdateFrequency = GetDefault<AABCharacter>()->NetUpdateFrequency;
+	GetCharacterMovement()->ForceReplicationUpdate();
+
+	OnDeath(KillingDamage, DamageEvent, Killer ? Killer->GetPawn() : NULL, DamageCauser);
+	return true;
+}
+
+bool AABCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser) const
+{
+	if (bIsDying
+		|| Role != ROLE_Authority)
+	{
+		return false;
+	}
+	return true;
+}
+
+void AABCharacter::OnRep_Health()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Health is %f"), Health)
+}
+
+void AABCharacter::KilledBy(APawn* EventInstigator)
+{
+	if (Role == ROLE_Authority && !bIsDying)
+	{
+		AController* Killer = NULL;
+		if (EventInstigator != NULL)
+		{
+			Killer = EventInstigator->Controller;
+			LastHitBy = NULL;
+		}
+
+		Die(Health, FDamageEvent(UDamageType::StaticClass()), Killer, NULL);
+	}
+}
+
+void AABCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
+{
+	//TODOS
+}
+
+void AABCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
+{
+	if (bIsDying)
+	{
+		return;
+	}
+
+	bReplicateMovement = false;
+	TearOff();
+	bIsDying = true;
+
+	if (Role == ROLE_Authority)
+	{
+		ReplicateHit(KillingDamage, DamageEvent, PawnInstigator, DamageCauser, true);
+
+		DropAll(EControllerHand::Left);
+		DropAll(EControllerHand::Right);
+	}
+	//TODOS
+	Body->SetSimulatePhysics(true);
+	Head->SetSimulatePhysics(true);
+
+	LeftHandMesh->SetSimulatePhysics(true);
+	RightHandMesh->SetSimulatePhysics(true);
+
+	//DetachFromControllerPendingDestroy();
+}
+
+void AABCharacter::OnRep_LastTakeHitInfo()
+{
+	if (LastTakeHitInfo.bKilled)
+	{
+		OnDeath(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
+	}
+	else
+	{
+		PlayHit(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
+	}
+}
+
+void AABCharacter::ReplicateHit(float Damage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser, bool bKilled)
+{
+	const float TimeoutTime = GetWorld()->GetTimeSeconds() + 0.5f;
+
+	FDamageEvent const& LastDamageEvent = LastTakeHitInfo.GetDamageEvent();
+	if ((PawnInstigator == LastTakeHitInfo.PawnInstigator.Get()) && (LastDamageEvent.DamageTypeClass == LastTakeHitInfo.DamageTypeClass) && (LastTakeHitTimeTimeout == TimeoutTime))
+	{
+		// same frame damage
+		if (bKilled && LastTakeHitInfo.bKilled)
+		{
+			// Redundant death take hit, just ignore it
+			return;
+		}
+
+		// otherwise, accumulate damage done this frame
+		Damage += LastTakeHitInfo.ActualDamage;
+	}
+
+	LastTakeHitInfo.ActualDamage = Damage;
+	LastTakeHitInfo.PawnInstigator = Cast<AABCharacter>(PawnInstigator);
+	LastTakeHitInfo.DamageCauser = DamageCauser;
+	LastTakeHitInfo.SetDamageEvent(DamageEvent);
+	LastTakeHitInfo.bKilled = bKilled;
+	LastTakeHitInfo.EnsureReplication();
+
+	LastTakeHitTimeTimeout = TimeoutTime;
+}
+
+//FTakeHitInfo
+FTakeHitInfo::FTakeHitInfo()
+	: ActualDamage(0)
+	, DamageTypeClass(NULL)
+	, PawnInstigator(NULL)
+	, DamageCauser(NULL)
+	, DamageEventClassID(0)
+	, bKilled(false)
+	, EnsureReplicationByte(0)
+{}
+
+FDamageEvent& FTakeHitInfo::GetDamageEvent()
+{
+	switch (DamageEventClassID)
+	{
+	case FPointDamageEvent::ClassID:
+		if (PointDamageEvent.DamageTypeClass == NULL)
+		{
+			PointDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return PointDamageEvent;
+
+	case FRadialDamageEvent::ClassID:
+		if (RadialDamageEvent.DamageTypeClass == NULL)
+		{
+			RadialDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return RadialDamageEvent;
+
+	default:
+		if (GeneralDamageEvent.DamageTypeClass == NULL)
+		{
+			GeneralDamageEvent.DamageTypeClass = DamageTypeClass ? DamageTypeClass : UDamageType::StaticClass();
+		}
+		return GeneralDamageEvent;
+	}
+}
+
+void FTakeHitInfo::SetDamageEvent(const FDamageEvent& DamageEvent)
+{
+	DamageEventClassID = DamageEvent.GetTypeID();
+	switch (DamageEventClassID)
+	{
+	case FPointDamageEvent::ClassID:
+		PointDamageEvent = *((FPointDamageEvent const*)(&DamageEvent));
+		break;
+	case FRadialDamageEvent::ClassID:
+		RadialDamageEvent = *((FRadialDamageEvent const*)(&DamageEvent));
+		break;
+	default:
+		GeneralDamageEvent = DamageEvent;
+	}
+
+	DamageTypeClass = DamageEvent.DamageTypeClass;
+}
+
+void FTakeHitInfo::EnsureReplication()
+{
+	EnsureReplicationByte++;
 }

@@ -31,10 +31,17 @@ class PLAYERVS_API ABulletBase : public AActor
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* ImpactSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
+	int32 HitDamage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
+	TSubclassOf<UDamageType> DamageType;
+
 public:	
 	// Sets default values for this actor's properties
 	ABulletBase();
 
+	UFUNCTION()
 	void InitializeBullet(float Velocity, AActor* Gun);
 
 protected:
@@ -47,6 +54,7 @@ protected:
 
 private:	
 
-	
+	class AActor* Gun;
+	class APawn* GunOwner;
 	
 };

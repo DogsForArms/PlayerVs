@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "PlayerVs.h"
+#include "Player/ABCharacter.h"
 
 // Sets default values
 ABulletBase::ABulletBase()
@@ -18,12 +20,15 @@ ABulletBase::ABulletBase()
 	CollisionComp->AlwaysLoadOnClient = true;
 	CollisionComp->AlwaysLoadOnServer = true;
 	CollisionComp->bTraceComplexOnMove = true;
+	CollisionComp->SetNotifyRigidBodyCollision(true);
 	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//CollisionComp->SetCollisionObjectType(COLLISION_PROJECTILE);
+	CollisionComp->SetCollisionObjectType(COLLISION_PROJECTILE);
 	CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CollisionComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	CollisionComp->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
+
 	RootComponent = CollisionComp;
 
 	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileComp");
@@ -42,6 +47,9 @@ ABulletBase::ABulletBase()
 	SetRemoteRoleForBackwardsCompat(ROLE_SimulatedProxy);
 	bReplicates = true;
 	bReplicateMovement = true;
+
+	HitDamage = 50.f;
+	DamageType = UDamageType::StaticClass();
 }
 
 void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
@@ -50,12 +58,16 @@ void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLi
 	DOREPLIFETIME(ABulletBase, bExploded);
 }
 
-void ABulletBase::InitializeBullet(float Velocity, AActor* Gun)
+void ABulletBase::InitializeBullet(float Velocity, AActor* FromGun)
 {
 	if (!MovementComp)
 	{
 		return;
 	}
+
+	Gun = FromGun;
+	GunOwner = Cast<APawn>(Gun->GetOwner());
+
 	MovementComp->InitialSpeed = Velocity;
 	MovementComp->MaxSpeed = Velocity;
 	CollisionComp->MoveIgnoreActors.Add(Gun);
@@ -68,12 +80,20 @@ void ABulletBase::PostInitializeComponents()
 	SetLifeSpan(10.0f);
 }
 
-void ABulletBase::OnImpact(const FHitResult& HitResult)
+void ABulletBase::OnImpact(const FHitResult& Impact)
 {
 	if (Role == ROLE_Authority && !bExploded)
 	{
 		bExploded = true;
 		OnRep_Exploded();
+
+		FPointDamageEvent PointDmg;
+		PointDmg.DamageTypeClass = DamageType;
+		PointDmg.HitInfo = Impact;
+		//PointDmg.ShotDirection = ShootDir;
+		PointDmg.Damage = HitDamage;
+
+		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
 	}
 }
 

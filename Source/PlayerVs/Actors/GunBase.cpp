@@ -24,7 +24,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	GunfireAudio->bAutoActivate = false;
 
 	bAlwaysRelevant = true;
-	VRGripInterfaceSettings.MovementReplicationType = EGripMovementReplicationSettings::ClientSide_Authoritive;
+	VRGripInterfaceSettings.MovementReplicationType = EGripMovementReplicationSettings::ForceClientSideMovement;
 	VRGripInterfaceSettings.AdvancedGripSettings.bSetOwnerOnGrip = true;
 	VRGripInterfaceSettings.AdvancedGripSettings.PhysicsSettings.bUsePhysicsSettings = true;
 	VRGripInterfaceSettings.AdvancedGripSettings.PhysicsSettings.bTurnOffGravityDuringGrip = true;
