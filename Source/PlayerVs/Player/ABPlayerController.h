@@ -61,8 +61,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Team")
 	ETeam GetTeam();
 
+    void DelayedCharacterSpawn(float Delay);
 protected:
 	
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_Team)
 	ETeam Team;
+
+private:
+    float RespawnCountdown;
+    FTimerHandle RespawnTimer;
+    void TryRespawn();
 };

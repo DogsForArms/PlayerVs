@@ -126,3 +126,22 @@ void AABPlayerController::DisableVoice()
 {
     StopTalking();
 }
+
+void AABPlayerController::DelayedCharacterSpawn(float Delay)
+{
+    RespawnTemplate = PawnTemplate;
+    RespawnCountdown = Delay;
+    GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AABCharacter::TryRespawn, 1, true);
+}
+
+void AABPlayerController::TryRespawn()
+{
+    RespawnCountdown -= 1;
+    if (RespawnCountdown <= 0)
+    {
+        RespawnCountdown = 0;
+        GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
+        GetWorld()->GetAuthGameMode<AABGameMode>()->ControllerNeedsCharacter(this, this->HMDEnable, this->HMDOffset, this->HMDRotation)
+    }
+}
+
