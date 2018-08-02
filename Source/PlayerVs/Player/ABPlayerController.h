@@ -68,7 +68,14 @@ protected:
 	ETeam Team;
 
 private:
+
+    UPROPERTY(Transient)
+    bool bIsWaitingForRespawn;
+
+    UPROPERTY(Transient)
     float RespawnCountdown;
+
+    float RespawnAfterTimeSeconds;
     FTimerHandle RespawnTimer;
     void TryRespawn();
 };

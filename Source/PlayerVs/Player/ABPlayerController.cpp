@@ -16,6 +16,8 @@ void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AABPlayerController, Team, COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(AABPlayerController, bIsWaitingForRespawn, COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(AABPlayerController, RespawnCountdown, COND_OwnerOnly);
 }
 
 void AABPlayerController::SetupInputComponent()
@@ -129,14 +131,15 @@ void AABPlayerController::DisableVoice()
 
 void AABPlayerController::DelayedCharacterSpawn(float Delay)
 {
-    RespawnTemplate = PawnTemplate;
+    bIsWaitingForRespawn = true;
+    RespawnAfterTimeSeconds = GetWorld()->GetTimeSeconds() + Delay;
     RespawnCountdown = Delay;
-    GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AABCharacter::TryRespawn, 1, true);
+    GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AABPlayerController::TryRespawn, 1, true);
 }
 
 void AABPlayerController::TryRespawn()
 {
-    RespawnCountdown -= 1;
+    RespawnCountdown = RespawnAfterTimeSeconds - GetWorld()->GetTimeSeconds();
     if (RespawnCountdown <= 0)
     {
         RespawnCountdown = 0;
