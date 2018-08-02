@@ -31,8 +31,6 @@ AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(Ob
 void AABGameMode::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
-
-	GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 }
 
 void AABGameMode::PreLogin(const FString & Options, const FString & Address, const FUniqueNetIdRepl & UniqueId, FString & ErrorMessage)
@@ -58,13 +56,6 @@ void AABGameMode::PreLogin(const FString & Options, const FString & Address, con
 void AABGameMode::PostLogin(APlayerController * NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-
-	AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
-	//if (NewPC && NewPC->GetPawn() == NULL)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("NewPlayer joined and no pawn."))
-	//}
-
 }
 
 void AABGameMode::HandleMatchIsWaitingToStart()
@@ -78,19 +69,13 @@ void AABGameMode::HandleMatchHasStarted()
 
 	AssignAliens(FMath::Max(1, NumPlayers / 3));
 	UnassignedToInnocent();
-
 }
 
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
-	bool bIsReadyToStart = NumPlayers > 1;
+	bool bIsReadyToStart = NumPlayers >= MinimumPlayers;
 
 	return bIsReadyToStart;
-}
-
-void AABGameMode::DefaultTimer()
-{
-//	UE_LOG(LogTemp, Warning, TEXT("Has match started %s"), *GetABGameState()->GetMatchState().ToString());
 }
 
 AABGameState* AABGameMode::GetABGameState()

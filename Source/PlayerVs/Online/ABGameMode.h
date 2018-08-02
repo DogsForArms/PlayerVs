@@ -29,15 +29,8 @@ class PLAYERVS_API AABGameMode : public AGameMode
 
 	/** starts match warmup */
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-
-	/** update remaining time */
-	virtual void DefaultTimer();
 	
-protected:
-	/** Handle for efficient management of DefaultTimer timer */
-	FTimerHandle TimerHandle_DefaultTimer;
-
-	
+protected:	
 	AABGameState* GetABGameState();
 
 	/** 
@@ -71,4 +64,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Initialization")
 	TSubclassOf<APawn> VRSpectatorTemplate;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Initialization")
+	int MinimumPlayers;
 };
