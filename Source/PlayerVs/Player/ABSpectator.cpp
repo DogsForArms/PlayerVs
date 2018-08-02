@@ -13,8 +13,16 @@ AABSpectator::AABSpectator(const FObjectInitializer& ObjectInitializer) :
 	VRMovementReference->GravityScale = 0;
 	VRMovementReference->AirControl = 1;
 	VRMovementReference->BrakingDecelerationFlying = 0.2;
-	VRMovementReference->SetMovementMode(EMovementMode::MOVE_Flying);
+	VRMovementReference->BrakingDecelerationFlying = 2000.0f;
 	VRMovementReference->bCheatFlying = 0;
+
+	VRMovementReference->SetMovementMode(EMovementMode::MOVE_Flying);
+	VRMovementReference->DefaultLandMovementMode = EMovementMode::MOVE_Flying;
+	VRMovementReference->DefaultWaterMovementMode = EMovementMode::MOVE_Flying;
+	VRMovementReference->NavAgentProps.bCanJump = false;
+	VRMovementReference->NavAgentProps.bCanWalk = false;
+	VRMovementReference->NavAgentProps.bCanSwim = false;
+	VRMovementReference->NavAgentProps.bCanFly = true;
 }
 
 
