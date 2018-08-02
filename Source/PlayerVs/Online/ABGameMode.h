@@ -51,6 +51,10 @@ protected:
 	*/
 	void UnassignedToInnocent();
 
+protected:
+	UFUNCTION()
+	virtual void ControllerNeedsSpectator(AController* Controller);
+
 public:
 
 	UFUNCTION()
@@ -59,9 +63,6 @@ public:
 	UFUNCTION()
 	virtual void ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
 
-	UFUNCTION()
-	virtual void ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
-
 	UPROPERTY(EditAnywhere, Category = "Initialization")
 	TSubclassOf<AABCharacter> FPSCharacterTemplate;
 
@@ -69,5 +70,5 @@ public:
 	TSubclassOf<AABCharacter> VRCharacterTemplate;
 
 	UPROPERTY(EditAnywhere, Category = "Initialization")
-	TSubclassOf<APawn> VRSpectatorPawn;
+	TSubclassOf<APawn> VRSpectatorTemplate;
 };

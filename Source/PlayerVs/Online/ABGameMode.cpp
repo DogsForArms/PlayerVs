@@ -11,10 +11,18 @@ AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(Ob
 {
 	//static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
-	//DefaultPawnClass = PlayerPawnOb.Class;
+
+	static ConstructorHelpers::FClassFinder<APawn> CharacterOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
+	static ConstructorHelpers::FClassFinder<APawn> FPSCharacterOb(TEXT("/Game/Blueprints/Player/FPS_ABCharacter_BP"));
+	static ConstructorHelpers::FClassFinder<APawn> SpectatorOb(TEXT("/Game/Blueprints/Player/ABSpectator_BP"));
+
 	PlayerControllerClass = PlayerControllerOb.Class;
 	PlayerStateClass = AABPlayerState::StaticClass();
 	GameStateClass = AABGameState::StaticClass();
+
+	FPSCharacterTemplate = FPSCharacterOb.Class;
+	VRCharacterTemplate = CharacterOb.Class;
+	VRSpectatorTemplate = SpectatorOb.Class;
 
 	bUseSeamlessTravel = true;
 }
@@ -160,37 +168,23 @@ void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnab
 
 void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
 {
-	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
-
-	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
-	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
-
-	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
-	{
-		//KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
-		//KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
-	}
-
-	if (VictimPlayerState)
-	{
-		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
-		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
-	}
-
-	ControllerNeedsSpectator(KilledPC, KilledPC->HMDEnable, KilledPC->HMDOffset, KilledPC->HMDRotation);
+	ControllerNeedsSpectator(KilledPlayer);
 }
 
-void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
+void AABGameMode::ControllerNeedsSpectator(AController* Controller)
 {
+	AABPlayerController* KilledPC = Cast<AABPlayerController>(Controller);
+	bool bHMDEnabled = KilledPC ? KilledPC->HMDEnable : false;
+
 	FTransform SpawnTransform;
 	if (Controller->GetPawn())
 		SpawnTransform = Controller->GetPawn()->GetActorTransform();
 
 	APawn* Spectator;
 	FActorSpawnParameters SpawnInfo;
-	if (VRSpectatorPawn && HMDEnabled)
+	if (VRSpectatorTemplate && bHMDEnabled)
 	{
-		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
+		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorTemplate, SpawnTransform, SpawnInfo);
 	}
 	else
 	{
