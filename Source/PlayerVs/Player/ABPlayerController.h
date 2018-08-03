@@ -21,9 +21,6 @@ class PLAYERVS_API AABPlayerController : public AVRPlayerController
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
 	UFUNCTION()
-	void OnRep_Team();
-
-	UFUNCTION()
 	void InitiatePlay();
 
 	UFUNCTION()
@@ -53,16 +50,7 @@ public:
 	UPROPERTY()
 	class UPlayerWidget* PlayerWidget;
 
-	void ServerSetTeam(ETeam Value);
-
-	UFUNCTION(BlueprintPure, Category = "Team")
-	ETeam GetTeam();
-
     void DelayedCharacterSpawn(float Delay);
-protected:
-	
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_Team)
-	ETeam Team;
 
 private:
 

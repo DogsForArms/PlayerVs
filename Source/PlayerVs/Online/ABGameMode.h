@@ -34,17 +34,6 @@ class PLAYERVS_API AABGameMode : public AGameMode
 protected:	
 	AABGameState* GetABGameState();
 
-	/** 
-		Assign PlayerStates to Alien team, 
-		Alien Count must be <= NumPlayers!
-	*/
-	void AssignAliens(int AlienCount);
-
-	/**
-		PlayerStates that Unassigned will be set to Innocent
-	*/
-	void UnassignedToInnocent();
-
 protected:
 	UFUNCTION()
 	virtual void ControllerNeedsSpectator(AController* Controller);
@@ -53,9 +42,6 @@ protected:
 	virtual void FinishMatch();
 
 public:
-
-	UFUNCTION()
-	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
 
 	UFUNCTION()
 	virtual void ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
@@ -72,9 +58,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Initialization")
 	int MinimumPlayers;
 
+	/* Bellow are some likely override functions!*/
 protected:
 	/* Overrides need to set some variable here about the winner / winning team.*/
 	virtual void DetermineMatchWinner();
 
 	virtual bool IsWinner(AABPlayerState* PlayerState) const;
+public:
+	/* Default behavior is to make player possess spectator*/
+	UFUNCTION()
+	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
 };

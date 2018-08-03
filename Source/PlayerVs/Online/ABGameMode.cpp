@@ -66,9 +66,6 @@ void AABGameMode::HandleMatchIsWaitingToStart()
 void AABGameMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
-
-	AssignAliens(FMath::Max(1, NumPlayers / 3));
-	UnassignedToInnocent();
 }
 
 bool AABGameMode::ReadyToStartMatch_Implementation()
@@ -81,33 +78,6 @@ bool AABGameMode::ReadyToStartMatch_Implementation()
 AABGameState* AABGameMode::GetABGameState()
 {
 	return Cast<AABGameState>(GameState);
-}
-
-
-void AABGameMode::AssignAliens(int AlienCount)
-{
-	while (AlienCount > 0)
-	{
-		int AlienIndex = FMath::RandRange(0, NumPlayers - 1);
-		auto PS = Cast<AABPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex));
-		if (PS->GetTeam() != ETeam::Alien)
-		{
-			PS->ServerSetTeam(ETeam::Alien);
-			AlienCount--;
-		}
-	}
-}
-
-void AABGameMode::UnassignedToInnocent()
-{
-	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		auto PS = Cast<AABPlayerController>((*It));
-		if (PS->GetTeam() == ETeam::Unassigned)
-		{
-			PS->ServerSetTeam(ETeam::Innocent);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -9,13 +9,12 @@
 
 AABPlayerController::AABPlayerController()
 {
-	Team = ETeam::Unassigned;
+
 }
 
 void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION(AABPlayerController, Team, COND_OwnerOnly);
     DOREPLIFETIME_CONDITION(AABPlayerController, bIsWaitingForRespawn, COND_OwnerOnly);
     DOREPLIFETIME_CONDITION(AABPlayerController, RespawnCountdown, COND_OwnerOnly);
 }
@@ -25,27 +24,6 @@ void AABPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::StartTalking);
 	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::StopTalking);
-}
-
-void AABPlayerController::OnRep_Team()
-{
-	if (PlayerWidget)
-	{
-		PlayerWidget->OnChangeTeam(Team);
-	}
-}
-
-void AABPlayerController::ServerSetTeam(ETeam Value)
-{
-	if (HasAuthority()) 
-	{
-		Team = Value;
-	}
-}
-
-ETeam AABPlayerController::GetTeam()
-{
-	return Team;
 }
 
 void AABPlayerController::BeginPlay()
@@ -60,8 +38,6 @@ void AABPlayerController::BeginPlay()
 			{
 				PlayerWidget->AddToViewport();
 			}
-			//Widget can be created after OnRep_Team event, then your team will not be displayed. :[
-			OnRep_Team();
 		}
 
 		InitiatePlay();
