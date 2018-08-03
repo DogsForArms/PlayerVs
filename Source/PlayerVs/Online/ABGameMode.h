@@ -10,6 +10,7 @@ class AABCharacter;
 class AABGameState;
 class AController;
 class APawn;
+class AABPlayerState;
 
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
@@ -48,6 +49,9 @@ protected:
 	UFUNCTION()
 	virtual void ControllerNeedsSpectator(AController* Controller);
 
+	UFUNCTION()
+	virtual void FinishMatch();
+
 public:
 
 	UFUNCTION()
@@ -67,4 +71,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Initialization")
 	int MinimumPlayers;
+
+protected:
+	/* Overrides need to set some variable here about the winner / winning team.*/
+	virtual void DetermineMatchWinner();
+
+	virtual bool IsWinner(AABPlayerState* PlayerState) const;
 };

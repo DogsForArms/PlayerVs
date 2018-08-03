@@ -179,3 +179,46 @@ void AABGameMode::ControllerNeedsSpectator(AController* Controller)
 
 	Controller->Possess(Spectator);
 }
+
+void AABGameMode::FinishMatch()
+{
+	AABGameState* const MyGameState = Cast<AABGameState>(GameState);
+	if (IsMatchInProgress())
+	{
+		EndMatch();
+		DetermineMatchWinner();
+
+		for (FConstControllerIterator It = GetWorld()->GetControllerIterator(); It; ++It)
+		{
+			AABPlayerState* PlayerState = Cast<AABPlayerState>((*It)->PlayerState);
+			const bool bIsWinner = IsWinner(PlayerState);
+
+			UE_LOG(LogTemp, Warning, TEXT("Game Ended %s won ? %d"), *PlayerState->GetName(), bIsWinner)
+
+			(*It)->GameHasEnded(NULL, bIsWinner);
+		}
+
+		/*
+		for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+		{
+			(*It)->TurnOff();
+		}
+
+		// set up to restart the match
+		MyGameState->RemainingTime = TimeBetweenMatches;
+		*/
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// End Game logic Overrides
+
+void AABGameMode::DetermineMatchWinner()
+{
+	// nothing to do here
+}
+
+bool AABGameMode::IsWinner(AABPlayerState* PlayerState) const
+{
+	return false;
+}

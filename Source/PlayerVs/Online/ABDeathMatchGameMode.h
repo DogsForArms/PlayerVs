@@ -6,6 +6,7 @@
 #include "Online/ABGameMode.h"
 #include "ABDeathMatchGameMode.generated.h"
 
+class AABDeathMatchPlayerState;
 /**
  * 
  */
@@ -17,5 +18,11 @@ class PLAYERVS_API AABDeathMatchGameMode : public AABGameMode
 public:
 
 	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType) override;
-	
+
+protected:
+	void DetermineMatchWinner() override;
+	bool IsWinner(AABPlayerState* PlayerState) const override;
+
+	UPROPERTY()
+	AABDeathMatchPlayerState* Winner;	
 };

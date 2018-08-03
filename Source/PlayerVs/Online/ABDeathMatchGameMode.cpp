@@ -30,4 +30,23 @@ void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlaye
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// End Game logic Overrides
+
+void AABDeathMatchGameMode::DetermineMatchWinner()
+{
+	for (FConstControllerIterator It = GetWorld()->GetControllerIterator(); It; ++It)
+	{
+		AABDeathMatchPlayerState* PlayerState = Cast<AABDeathMatchPlayerState>((*It)->PlayerState);
+		if (!Winner || PlayerState->GetNumKills() > Winner->GetNumKills())
+		{
+			Winner = PlayerState;
+		}
+	}
+}
+
+bool AABDeathMatchGameMode::IsWinner(AABPlayerState* PlayerState) const
+{
+	return Winner == PlayerState;
+}
 
