@@ -8,24 +8,26 @@ void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlaye
 {
 	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
 
-	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
-	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
+	AABDeathMatchPlayerState* KillerPlayerState = Killer ? Cast<AABDeathMatchPlayerState>(Killer->PlayerState) : NULL;
+	AABDeathMatchPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABDeathMatchPlayerState>(KilledPlayer->PlayerState) : NULL;
 
 	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
 	{
-		//KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
+		KillerPlayerState->ScoreKill(VictimPlayerState);
 		//KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
 	}
 
 	if (VictimPlayerState)
 	{
-		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
+		VictimPlayerState->ScoreDeath(KillerPlayerState);
 		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
 	}
 
 	Super::Killed(Killer, KilledPlayer, KilledPawn, DamageType);
-
-	KilledPC->DelayedCharacterSpawn(5.0f);
+	if (KilledPC)
+	{
+		KilledPC->DelayedCharacterSpawn(5.0f);
+	}
 }
 
 
