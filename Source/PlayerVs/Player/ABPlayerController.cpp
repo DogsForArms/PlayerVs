@@ -23,8 +23,8 @@ void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 void AABPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::EnableVoice);
-	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::DisableVoice);
+	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::StartTalking);
+	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::StopTalking);
 }
 
 void AABPlayerController::OnRep_Team()
@@ -117,16 +117,6 @@ void AABPlayerController::ServerSetHMDConfig_Implementation(bool HMDEnabled, FVe
 bool AABPlayerController::ServerSetHMDConfig_Validate(bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
 	return true;
-}
-
-void AABPlayerController::EnableVoice()
-{
-    StartTalking();
-}
-
-void AABPlayerController::DisableVoice()
-{
-    StopTalking();
 }
 
 void AABPlayerController::DelayedCharacterSpawn(float Delay)
