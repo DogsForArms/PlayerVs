@@ -144,7 +144,7 @@ void AABPlayerController::TryRespawn()
     {
         RespawnCountdown = 0;
         GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
-        GetWorld()->GetAuthGameMode<AABGameMode>()->ControllerNeedsCharacter(this, this->HMDEnable, this->HMDOffset, this->HMDRotation)
+		GetWorld()->GetAuthGameMode<AABGameMode>()->ControllerNeedsCharacter(this, this->HMDEnable, this->HMDOffset, this->HMDRotation);
     }
 }
 

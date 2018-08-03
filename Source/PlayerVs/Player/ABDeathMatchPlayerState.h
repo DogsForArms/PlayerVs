@@ -23,4 +23,10 @@ protected:
 public:
 	void ScoreKill(AABDeathMatchPlayerState* Victim);
 	void ScoreDeath(AABDeathMatchPlayerState* KilledBy);
+
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int GetNumKills();
+
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int GetNumDeaths();
 };

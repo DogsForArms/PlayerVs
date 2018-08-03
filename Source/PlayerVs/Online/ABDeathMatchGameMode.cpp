@@ -24,6 +24,8 @@ void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlaye
 	}
 
 	Super::Killed(Killer, KilledPlayer, KilledPawn, DamageType);
+
+	KilledPC->DelayedCharacterSpawn(5.0f);
 }
 
 
