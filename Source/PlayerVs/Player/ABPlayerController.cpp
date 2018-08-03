@@ -9,7 +9,7 @@
 
 AABPlayerController::AABPlayerController()
 {
-
+	Team = ETeam::Unassigned;
 }
 
 void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

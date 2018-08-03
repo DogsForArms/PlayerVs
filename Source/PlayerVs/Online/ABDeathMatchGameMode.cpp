@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ABDeathMatchGameMode.h"
-#include "Player/ABPlayerState.h"
+#include "Player/ABDeathMatchPlayerState.h"
 #include "Player/ABPlayerController.h"
 
 void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)

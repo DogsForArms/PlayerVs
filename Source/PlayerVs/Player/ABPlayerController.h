@@ -69,10 +69,10 @@ protected:
 
 private:
 
-    UPROPERTY(Transient)
+    UPROPERTY(Transient, Replicated)
     bool bIsWaitingForRespawn;
 
-    UPROPERTY(Transient)
+    UPROPERTY(Transient, Replicated)
     float RespawnCountdown;
 
     float RespawnAfterTimeSeconds;
