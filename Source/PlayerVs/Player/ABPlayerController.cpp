@@ -26,6 +26,11 @@ void AABPlayerController::SetupInputComponent()
 	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::StopTalking);
 }
 
+void AABPlayerController::GameHasEnded(AActor* EndGameFocusOrNull, bool bIsWinner)
+{
+
+}
+
 void AABPlayerController::BeginPlay()
 {
 	Super::BeginPlay();

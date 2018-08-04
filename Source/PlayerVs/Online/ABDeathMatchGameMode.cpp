@@ -4,6 +4,12 @@
 #include "Player/ABDeathMatchPlayerState.h"
 #include "Player/ABPlayerController.h"
 
+AABDeathMatchGameMode::AABDeathMatchGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+	PlayerStateClass = AABDeathMatchPlayerState::StaticClass();
+	MaxKills = 20;
+}
+
 void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
 {
 	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
@@ -23,11 +29,22 @@ void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlaye
 		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
 	}
 
+
+	bool bGameShouldEnd = MaxKills > 0 && KillerPlayerState->GetNumKills() >= MaxKills;
+	if (bGameShouldEnd)
+	{
+		FinishMatch();
+		return;
+	}
+
 	Super::Killed(Killer, KilledPlayer, KilledPawn, DamageType);
+
 	if (KilledPC)
 	{
 		KilledPC->DelayedCharacterSpawn(5.0f);
 	}
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////

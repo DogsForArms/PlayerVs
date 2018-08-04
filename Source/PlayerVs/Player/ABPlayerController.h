@@ -20,6 +20,8 @@ class PLAYERVS_API AABPlayerController : public AVRPlayerController
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
+	virtual void GameHasEnded(class AActor* EndGameFocus = NULL, bool bIsWinner = false);
+
 	UFUNCTION()
 	void InitiatePlay();
 

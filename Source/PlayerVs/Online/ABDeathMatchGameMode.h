@@ -13,13 +13,17 @@ class AABDeathMatchPlayerState;
 UCLASS()
 class PLAYERVS_API AABDeathMatchGameMode : public AABGameMode
 {
-	GENERATED_BODY()
+	GENERATED_UCLASS_BODY()
 	
 public:
 
 	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType) override;
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, Category = "config")
+	int32 MaxKills;
+
 	void DetermineMatchWinner() override;
 	bool IsWinner(AABPlayerState* PlayerState) const override;
 

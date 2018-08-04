@@ -14,7 +14,12 @@ class PLAYERVS_API AABGameState : public AGameState
 {
 	GENERATED_BODY()
 	
+public:
+
+	UPROPERTY(Transient, Replicated)
+	int32 RemainingTime;
 	
-	
+	UPROPERTY(Transient, Replicated)
+	bool bTimerPaused;
 	
 };
