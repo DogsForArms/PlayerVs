@@ -55,12 +55,29 @@ void AABGameMode::PreLogin(const FString & Options, const FString & Address, con
 	}
 }
 
+void AABGameMode::OnMatchStateSet()
+{
+	Super::OnMatchStateSet();
+	if (GetMatchState() == MatchState::StartingCountdown)
+	{
+		HandleMatchStartingCountdown();
+	}
+}
+
+bool AABGameMode::HasMatchStarted() const
+{
+	return !(GetMatchState() == MatchState::EnteringMap || GetMatchState() == MatchState::StartingCountdown || GetMatchState() == MatchState::WaitingToStart);
+}
+
+void AABGameMode::HandleMatchStartingCountdown()
+{
+	auto GS = GetABGameState();
+	if (GS) GS->RemainingTime = TimeBeforeMatch;
+}
+
 void AABGameMode::HandleMatchIsWaitingToStart()
 {
 	Super::HandleMatchIsWaitingToStart();
-
-	auto GS = GetABGameState();
-	if (GS) GS->RemainingTime = TimeBeforeMatch;
 }
 
 void AABGameMode::HandleMatchHasStarted()
@@ -71,7 +88,7 @@ void AABGameMode::HandleMatchHasStarted()
 	if (GS) GS->RemainingTime = RoundTime;
 }
 
-//NOT FOR OVERRIDES!
+// Handling of MatchState is manual
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
 	return false;
@@ -80,17 +97,21 @@ bool AABGameMode::ReadyToStartMatch_Implementation()
 void AABGameMode::DefaultTimer()
 {
 	AABGameState* GS = GetABGameState();
-	if (!GS)
-		return;
+	if (!GS) return;
 	UE_LOG(LogTemp, Warning, TEXT("DefaultTimer GetMatchState: %s (%d)"), *GetMatchState().ToString(), GS->RemainingTime)
 
-	if (!GS->bTimerPaused && (IsMatchInProgress() || HasMatchEnded() || GameCanStartCountdown()))
+	if (GameCanStartCountdown())
+	{
+		SetMatchState(MatchState::StartingCountdown);
+	}
+	else
+	if (!GS->bTimerPaused && (IsMatchInProgress() || HasMatchEnded() || GetMatchState() == MatchState::StartingCountdown))
 	{
 		GS->RemainingTime--;
 
 		if (GS->RemainingTime <= 0)
 		{
-			if (GameCanStartCountdown())
+			if (GetMatchState() == MatchState::StartingCountdown)
 			{
 				StartMatch();
 			}

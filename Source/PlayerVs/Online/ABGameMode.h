@@ -12,12 +12,23 @@ class AController;
 class APawn;
 class AABPlayerState;
 
+namespace MatchState
+{
+	const FName StartingCountdown = FName(TEXT("StartingCountdown"));			// Actors are ticking but match cant begin to start
+}
+
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
 
+protected:
+
 	virtual void PreInitializeComponents() override;
+
+	virtual bool HasMatchStarted() const override;
+
+	virtual void HandleMatchStartingCountdown();
 
 	virtual void HandleMatchIsWaitingToStart() override;
 
@@ -28,8 +39,7 @@ class PLAYERVS_API AABGameMode : public AGameMode
 	/** Accept or reject a player attempting to join the server.  Fails login if you set the ErrorMessage to a non-empty string. */
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
-	///** starts match warmup */
-	//virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void OnMatchStateSet();
 
 	//virtual void HandleMatchIsWaitingToStart() override;
 	
