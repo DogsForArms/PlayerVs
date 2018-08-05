@@ -18,7 +18,7 @@ class PLAYERVS_API AABGameState : public AGameState
 	
 public:
 
-	UPROPERTY(Transient, Replicated)
+	UPROPERTY(Transient, Replicated, BlueprintReadOnly)
 	int32 RemainingTime;
 	
 	UPROPERTY(Transient, Replicated)
