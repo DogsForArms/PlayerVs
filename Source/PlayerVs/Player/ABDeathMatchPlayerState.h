@@ -25,8 +25,8 @@ public:
 	void ScoreDeath(AABDeathMatchPlayerState* KilledBy);
 
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	int GetNumKills();
+	int GetNumKills() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	int GetNumDeaths();
+	int GetNumDeaths() const;
 };

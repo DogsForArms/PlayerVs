@@ -20,12 +20,12 @@ void AABDeathMatchPlayerState::ScoreDeath(AABDeathMatchPlayerState* KilledBy)
 	NumDeaths++;
 }
 
-int AABDeathMatchPlayerState::GetNumKills()
+int AABDeathMatchPlayerState::GetNumKills() const
 {
 	return NumKills;
 }
 
-int AABDeathMatchPlayerState::GetNumDeaths()
+int AABDeathMatchPlayerState::GetNumDeaths() const
 {
 	return NumDeaths;
 }

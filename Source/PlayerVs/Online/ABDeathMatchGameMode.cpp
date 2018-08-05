@@ -3,10 +3,12 @@
 #include "ABDeathMatchGameMode.h"
 #include "Player/ABDeathMatchPlayerState.h"
 #include "Player/ABPlayerController.h"
+#include "Online/ABDeathMatchGameState.h"
 
 AABDeathMatchGameMode::AABDeathMatchGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PlayerStateClass = AABDeathMatchPlayerState::StaticClass();
+	GameStateClass = AABDeathMatchGameState::StaticClass();
 	MaxKills = 20;
 }
 
