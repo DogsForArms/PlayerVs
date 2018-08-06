@@ -9,12 +9,23 @@
 /**
  * 
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMatchStateChanged, FName, MatchState);
+
 UCLASS()
 class PLAYERVS_API AABGameState : public AGameState
 {
 	GENERATED_BODY()
 	
+public:
+
+	UPROPERTY(Transient, Replicated, BlueprintReadOnly)
+	int32 RemainingTime;
 	
+	UPROPERTY(Transient, Replicated)
+	bool bTimerPaused;
 	
-	
+	virtual void OnRep_MatchState() override;
+
+	UPROPERTY(BlueprintAssignable)
+	FMatchStateChanged OnMatchStateChanged;
 };

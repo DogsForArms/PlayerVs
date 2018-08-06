@@ -18,13 +18,9 @@ class PLAYERVS_API AABPlayerController : public AVRPlayerController
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
-    void EnableVoice();
-    void DisableVoice();
-
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
 
-	UFUNCTION()
-	void OnRep_Team();
+	virtual void GameHasEnded(class AActor* EndGameFocus = NULL, bool bIsWinner = false);
 
 	UFUNCTION()
 	void InitiatePlay();
@@ -56,13 +52,17 @@ public:
 	UPROPERTY()
 	class UPlayerWidget* PlayerWidget;
 
-	void ServerSetTeam(ETeam Value);
+    void DelayedCharacterSpawn(float Delay);
 
-	UFUNCTION(BlueprintPure, Category = "Team")
-	ETeam GetTeam();
+private:
 
-protected:
-	
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_Team)
-	ETeam Team;
+    UPROPERTY(Transient, Replicated)
+    bool bIsWaitingForRespawn;
+
+    UPROPERTY(Transient, Replicated)
+    float RespawnCountdown;
+
+    float RespawnAfterTimeSeconds;
+    FTimerHandle RespawnTimer;
+    void TryRespawn();
 };

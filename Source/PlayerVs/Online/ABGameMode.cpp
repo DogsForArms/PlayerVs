@@ -11,10 +11,18 @@ AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(Ob
 {
 	//static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
-	//DefaultPawnClass = PlayerPawnOb.Class;
+
+	static ConstructorHelpers::FClassFinder<APawn> CharacterOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
+	static ConstructorHelpers::FClassFinder<APawn> FPSCharacterOb(TEXT("/Game/Blueprints/Player/FPS_ABCharacter_BP"));
+	static ConstructorHelpers::FClassFinder<APawn> SpectatorOb(TEXT("/Game/Blueprints/Player/ABSpectator_BP"));
+
 	PlayerControllerClass = PlayerControllerOb.Class;
 	PlayerStateClass = AABPlayerState::StaticClass();
 	GameStateClass = AABGameState::StaticClass();
+
+	FPSCharacterTemplate = FPSCharacterOb.Class;
+	VRCharacterTemplate = CharacterOb.Class;
+	VRSpectatorTemplate = SpectatorOb.Class;
 
 	bUseSeamlessTravel = true;
 }
@@ -47,16 +55,24 @@ void AABGameMode::PreLogin(const FString & Options, const FString & Address, con
 	}
 }
 
-void AABGameMode::PostLogin(APlayerController * NewPlayer)
+void AABGameMode::OnMatchStateSet()
 {
-	Super::PostLogin(NewPlayer);
+	Super::OnMatchStateSet();
+	if (GetMatchState() == MatchState::StartingCountdown)
+	{
+		HandleMatchStartingCountdown();
+	}
+}
 
-	AABPlayerController* NewPC = Cast<AABPlayerController>(NewPlayer);
-	//if (NewPC && NewPC->GetPawn() == NULL)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("NewPlayer joined and no pawn."))
-	//}
+bool AABGameMode::HasMatchStarted() const
+{
+	return !(GetMatchState() == MatchState::EnteringMap || GetMatchState() == MatchState::StartingCountdown || GetMatchState() == MatchState::WaitingToStart);
+}
 
+void AABGameMode::HandleMatchStartingCountdown()
+{
+	auto GS = GetABGameState();
+	if (GS) GS->RemainingTime = TimeBeforeMatch;
 }
 
 void AABGameMode::HandleMatchIsWaitingToStart()
@@ -68,54 +84,53 @@ void AABGameMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
-	AssignAliens(FMath::Max(1, NumPlayers / 3));
-	UnassignedToInnocent();
-
+	auto GS = GetABGameState();
+	if (GS) GS->RemainingTime = RoundTime;
 }
 
+// Handling of MatchState is manual
 bool AABGameMode::ReadyToStartMatch_Implementation()
 {
-	bool bIsReadyToStart = NumPlayers > 1;
-
-	return bIsReadyToStart;
+	return false;
 }
 
 void AABGameMode::DefaultTimer()
 {
-//	UE_LOG(LogTemp, Warning, TEXT("Has match started %s"), *GetABGameState()->GetMatchState().ToString());
-}
+	AABGameState* GS = GetABGameState();
+	if (!GS) return;
+	UE_LOG(LogTemp, Warning, TEXT("DefaultTimer GetMatchState: %s (%d)"), *GetMatchState().ToString(), GS->RemainingTime)
 
-AABGameState* AABGameMode::GetABGameState()
-{
-	return Cast<AABGameState>(GameState);
-}
-
-
-void AABGameMode::AssignAliens(int AlienCount)
-{
-	while (AlienCount > 0)
+	if (GameCanStartCountdown())
 	{
-		int AlienIndex = FMath::RandRange(0, NumPlayers - 1);
-		auto PS = Cast<AABPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex));
-		if (PS->GetTeam() != ETeam::Alien)
+		SetMatchState(MatchState::StartingCountdown);
+	}
+	else
+	if (!GS->bTimerPaused && (IsMatchInProgress() || HasMatchEnded() || GetMatchState() == MatchState::StartingCountdown))
+	{
+		GS->RemainingTime--;
+
+		if (GS->RemainingTime <= 0)
 		{
-			PS->ServerSetTeam(ETeam::Alien);
-			AlienCount--;
+			if (GetMatchState() == MatchState::StartingCountdown)
+			{
+				StartMatch();
+			}
+			else
+			if (IsMatchInProgress())
+			{
+				//Game ran out of time
+				FinishMatch();
+			}
+			else
+			if (HasMatchEnded())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("DefaultTimer HasMatchEnded!"))
+				RestartGame();
+			}
 		}
 	}
 }
 
-void AABGameMode::UnassignedToInnocent()
-{
-	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		auto PS = Cast<AABPlayerController>((*It));
-		if (PS->GetTeam() == ETeam::Unassigned)
-		{
-			PS->ServerSetTeam(ETeam::Innocent);
-		}
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 // Game Logic 
@@ -158,39 +173,20 @@ void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnab
 	Controller->Possess(Character);
 }
 
-void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
+void AABGameMode::ControllerNeedsSpectator(AController* Controller)
 {
-	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
+	AABPlayerController* KilledPC = Cast<AABPlayerController>(Controller);
+	bool bHMDEnabled = KilledPC ? KilledPC->HMDEnable : false;
 
-	AABPlayerState* KillerPlayerState = Killer ? Cast<AABPlayerState>(Killer->PlayerState) : NULL;
-	AABPlayerState* VictimPlayerState = KilledPlayer ? Cast<AABPlayerState>(KilledPlayer->PlayerState) : NULL;
-
-	if (KillerPlayerState && KillerPlayerState != VictimPlayerState)
-	{
-		//KillerPlayerState->ScoreKill(VictimPlayerState, KillScore);
-		//KillerPlayerState->InformAboutKill(KillerPlayerState, DamageType, VictimPlayerState);
-	}
-
-	if (VictimPlayerState)
-	{
-		//VictimPlayerState->ScoreDeath(KillerPlayerState, DeathScore);
-		//VictimPlayerState->BroadcastDeath(KillerPlayerState, DamageType, VictimPlayerState);
-	}
-
-	ControllerNeedsSpectator(KilledPC, KilledPC->HMDEnable, KilledPC->HMDOffset, KilledPC->HMDRotation);
-}
-
-void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
-{
 	FTransform SpawnTransform;
 	if (Controller->GetPawn())
 		SpawnTransform = Controller->GetPawn()->GetActorTransform();
 
 	APawn* Spectator;
 	FActorSpawnParameters SpawnInfo;
-	if (VRSpectatorPawn && HMDEnabled)
+	if (VRSpectatorTemplate && bHMDEnabled)
 	{
-		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorPawn, SpawnTransform, SpawnInfo);
+		Spectator = GetWorld()->SpawnActor<APawn>(VRSpectatorTemplate, SpawnTransform, SpawnInfo);
 	}
 	else
 	{
@@ -199,4 +195,59 @@ void AABGameMode::ControllerNeedsSpectator(AController* Controller, bool HMDEnab
 	}
 
 	Controller->Possess(Spectator);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// End Game logic Overrides
+
+bool AABGameMode::GameCanStartCountdown()
+{
+	return NumPlayers >= MinimumPlayers && MatchState::WaitingToStart == GetMatchState();
+}
+
+void AABGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
+{
+	ControllerNeedsSpectator(KilledPlayer);
+}
+
+float AABGameMode::ModifyDamage(float Damage, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
+{
+	return IsMatchInProgress() ? Damage : 0.f;
+}
+
+void AABGameMode::DetermineMatchWinner()
+{
+	// nothing to do here
+}
+
+bool AABGameMode::IsWinner(AABPlayerState* PlayerState) const
+{
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Hyelpers
+
+AABGameState* AABGameMode::GetABGameState()
+{
+	return Cast<AABGameState>(GameState);
+}
+
+void AABGameMode::FinishMatch()
+{
+	AABGameState* const GS = Cast<AABGameState>(GameState);
+	if (IsMatchInProgress() && GS)
+	{
+		EndMatch();
+		DetermineMatchWinner();
+
+		for (FConstControllerIterator It = GetWorld()->GetControllerIterator(); It; ++It)
+		{
+			AABPlayerState* PlayerState = Cast<AABPlayerState>((*It)->PlayerState);
+			const bool bIsWinner = IsWinner(PlayerState);
+			(*It)->GameHasEnded(NULL, bIsWinner);
+		}
+
+		GS->RemainingTime = TimeBetweenMatches;
+	}
 }

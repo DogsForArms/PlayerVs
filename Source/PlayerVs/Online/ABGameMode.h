@@ -10,13 +10,25 @@ class AABCharacter;
 class AABGameState;
 class AController;
 class APawn;
+class AABPlayerState;
+
+namespace MatchState
+{
+	const FName StartingCountdown = FName(TEXT("StartingCountdown"));			// Actors are ticking but match cant begin to start
+}
 
 UCLASS()
 class PLAYERVS_API AABGameMode : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
 
+protected:
+
 	virtual void PreInitializeComponents() override;
+
+	virtual bool HasMatchStarted() const override;
+
+	virtual void HandleMatchStartingCountdown();
 
 	virtual void HandleMatchIsWaitingToStart() override;
 
@@ -27,40 +39,40 @@ class PLAYERVS_API AABGameMode : public AGameMode
 	/** Accept or reject a player attempting to join the server.  Fails login if you set the ErrorMessage to a non-empty string. */
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
-	/** starts match warmup */
-	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void OnMatchStateSet();
 
-	/** update remaining time */
-	virtual void DefaultTimer();
+	//virtual void HandleMatchIsWaitingToStart() override;
 	
-protected:
-	/** Handle for efficient management of DefaultTimer timer */
-	FTimerHandle TimerHandle_DefaultTimer;
-
-	
+protected:	
 	AABGameState* GetABGameState();
 
-	/** 
-		Assign PlayerStates to Alien team, 
-		Alien Count must be <= NumPlayers!
-	*/
-	void AssignAliens(int AlienCount);
+	FTimerHandle TimerHandle_DefaultTimer;
 
-	/**
-		PlayerStates that Unassigned will be set to Innocent
-	*/
-	void UnassignedToInnocent();
+	void DefaultTimer();
+
+	UPROPERTY(EditDefaultsOnly, Category = "config")
+	int32 RoundTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	int32 TimeBetweenMatches;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	int32 MinimumPlayers;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	int32 TimeBeforeMatch;
+
+protected:
+	UFUNCTION()
+	virtual void ControllerNeedsSpectator(AController* Controller);
+
+	UFUNCTION()
+	virtual void FinishMatch();
 
 public:
 
 	UFUNCTION()
-	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
-
-	UFUNCTION()
 	virtual void ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
-
-	UFUNCTION()
-	virtual void ControllerNeedsSpectator(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation);
 
 	UPROPERTY(EditAnywhere, Category = "Initialization")
 	TSubclassOf<AABCharacter> FPSCharacterTemplate;
@@ -69,5 +81,24 @@ public:
 	TSubclassOf<AABCharacter> VRCharacterTemplate;
 
 	UPROPERTY(EditAnywhere, Category = "Initialization")
-	TSubclassOf<APawn> VRSpectatorPawn;
+	TSubclassOf<APawn> VRSpectatorTemplate;
+
+	/* Bellow are some likely override functions!*/
+protected:
+	/* Overrides need to set some variable here about the winner / winning team.*/
+	virtual void DetermineMatchWinner();
+
+	virtual bool IsWinner(AABPlayerState* PlayerState) const;
+
+	// is game in the WaitingToStart MatchState && whatever other conditions apply?
+	virtual bool GameCanStartCountdown();
+
+public:
+	/* Default behavior is to make player possess spectator*/
+	UFUNCTION()
+	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType);
+
+	UFUNCTION()
+	virtual float ModifyDamage(float Damage, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const;
+
 };

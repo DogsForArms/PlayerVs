@@ -699,21 +699,18 @@ bool AABCharacter::IsLocalGripOrDropEvent(UObject* ObjectToGrip)
 /** Take damage, handle death */
 float AABCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	AABGameMode* const Game = GetWorld()->GetAuthGameMode<AABGameMode>();
+	Damage = Game ? Game->ModifyDamage(Damage, this, DamageEvent, EventInstigator, DamageCauser) : Damage;
+	Damage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+
 	Health -= Damage;
-
-	// Modify based on game rules.
-	//AShooterGameMode* const Game = GetWorld()->GetAuthGameMode<AABGameMode>();
-	//Damage = Game ? Game->ModifyDamage(Damage, this, DamageEvent, EventInstigator, DamageCauser) : 0.f;
-
-	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-
 	if (Health <= 0)
 	{
-		Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
+		Die(Damage, DamageEvent, EventInstigator, DamageCauser);
 	}
 	else
 	{
-		PlayHit(ActualDamage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
+		PlayHit(Damage, DamageEvent, EventInstigator ? EventInstigator->GetPawn() : NULL, DamageCauser);
 	}
 
 	return Damage;

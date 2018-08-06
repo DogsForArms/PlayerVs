@@ -15,35 +15,20 @@ AABPlayerController::AABPlayerController()
 void AABPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION(AABPlayerController, Team, COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(AABPlayerController, bIsWaitingForRespawn, COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(AABPlayerController, RespawnCountdown, COND_OwnerOnly);
 }
 
 void AABPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::EnableVoice);
-	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::DisableVoice);
+	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AABPlayerController::StartTalking);
+	InputComponent->BindAction("PushToTalk", IE_Released, this, &AABPlayerController::StopTalking);
 }
 
-void AABPlayerController::OnRep_Team()
+void AABPlayerController::GameHasEnded(AActor* EndGameFocusOrNull, bool bIsWinner)
 {
-	if (PlayerWidget)
-	{
-		PlayerWidget->OnChangeTeam(Team);
-	}
-}
 
-void AABPlayerController::ServerSetTeam(ETeam Value)
-{
-	if (HasAuthority()) 
-	{
-		Team = Value;
-	}
-}
-
-ETeam AABPlayerController::GetTeam()
-{
-	return Team;
 }
 
 void AABPlayerController::BeginPlay()
@@ -58,8 +43,6 @@ void AABPlayerController::BeginPlay()
 			{
 				PlayerWidget->AddToViewport();
 			}
-			//Widget can be created after OnRep_Team event, then your team will not be displayed. :[
-			OnRep_Team();
 		}
 
 		InitiatePlay();
@@ -117,12 +100,22 @@ bool AABPlayerController::ServerSetHMDConfig_Validate(bool HMDEnabled, FVector H
 	return true;
 }
 
-void AABPlayerController::EnableVoice()
+void AABPlayerController::DelayedCharacterSpawn(float Delay)
 {
-    StartTalking();
+    bIsWaitingForRespawn = true;
+    RespawnAfterTimeSeconds = GetWorld()->GetTimeSeconds() + Delay;
+    RespawnCountdown = Delay;
+    GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AABPlayerController::TryRespawn, 1, true);
 }
 
-void AABPlayerController::DisableVoice()
+void AABPlayerController::TryRespawn()
 {
-    StopTalking();
+    RespawnCountdown = RespawnAfterTimeSeconds - GetWorld()->GetTimeSeconds();
+    if (RespawnCountdown <= 0)
+    {
+        RespawnCountdown = 0;
+        GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
+		GetWorld()->GetAuthGameMode<AABGameMode>()->ControllerNeedsCharacter(this, this->HMDEnable, this->HMDOffset, this->HMDRotation);
+    }
 }
+
