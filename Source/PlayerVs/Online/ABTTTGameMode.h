@@ -31,7 +31,18 @@ protected:
 	*/
 	void UnassignedToInnocent();
 
+	virtual void HandleMatchHasEnded() override;
+
 public:
 	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType) override;
 	
+	virtual bool GameCanStartCountdown() override;
+
+protected:
+	virtual void DetermineMatchWinner() override;
+
+	virtual	bool IsWinner(AABPlayerState* PlayerState) const override;
+
+private:
+	bool bInnocentsWin;
 };
