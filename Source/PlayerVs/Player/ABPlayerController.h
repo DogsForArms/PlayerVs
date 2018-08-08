@@ -22,7 +22,7 @@ class PLAYERVS_API AABPlayerController : public AVRPlayerController
 
 	virtual void GameHasEnded(class AActor* EndGameFocus = NULL, bool bIsWinner = false);
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void InitiatePlay();
 
 	UFUNCTION()
