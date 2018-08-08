@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "VRPlayerController.h"
-#include "Types.h"
+#include "Types/Types.h"
 #include "ABPlayerController.generated.h"
 
 /**

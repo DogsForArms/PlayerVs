@@ -3,7 +3,7 @@
 #include "ABTTTGameMode.h"
 #include "Online/ABTTTGameState.h"
 #include "Player/ABTTTPlayerState.h"
-#include "Player/Types.h"
+#include "Types/Types.h"
 #include "Kismet/GameplayStatics.h"
 
 AABTTTGameMode::AABTTTGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

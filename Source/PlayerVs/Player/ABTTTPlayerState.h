@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Player/ABPlayerState.h"
-#include "Player/Types.h"
+#include "Types/Types.h"
 #include "ABTTTPlayerState.generated.h"
 
 /**
