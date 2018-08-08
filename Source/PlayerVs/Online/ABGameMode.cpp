@@ -39,14 +39,10 @@ void AABGameMode::PreInitializeComponents()
 		const FString TimeBetweenMatchesKey = TEXT("TimeBetweenMatches");
 		const FString TimeBeforeMatchKey = TEXT("TimeBeforeMatch");
 
-		MinimumPlayers = UGameplayStatics::HasOption(OptionsString, MinimumPlayersKey) ?
-			UGameplayStatics::GetIntOption(OptionsString, MinimumPlayersKey, MinimumPlayers) : MinimumPlayers;
-		RoundTime = UGameplayStatics::HasOption(OptionsString, RoundTimeKey) ?
-			UGameplayStatics::GetIntOption(OptionsString, RoundTimeKey, RoundTime) : RoundTime;
-		TimeBetweenMatches = UGameplayStatics::HasOption(OptionsString, TimeBetweenMatchesKey) ?
-			UGameplayStatics::GetIntOption(OptionsString, TimeBetweenMatchesKey, TimeBetweenMatches) : TimeBetweenMatches;
-		TimeBeforeMatch = UGameplayStatics::HasOption(OptionsString, TimeBeforeMatchKey) ?
-			UGameplayStatics::GetIntOption(OptionsString, TimeBeforeMatchKey, TimeBeforeMatch) : TimeBeforeMatch;
+		MinimumPlayers = UGameplayStatics::GetIntOption(OptionsString, MinimumPlayersKey, MinimumPlayers);
+		RoundTime = UGameplayStatics::GetIntOption(OptionsString, RoundTimeKey, RoundTime);
+		TimeBetweenMatches = UGameplayStatics::GetIntOption(OptionsString, TimeBetweenMatchesKey, TimeBetweenMatches);
+		TimeBeforeMatch = UGameplayStatics::GetIntOption(OptionsString, TimeBeforeMatchKey, TimeBeforeMatch);
 
 		UE_LOG(LogTemp, Warning, TEXT("OptionsString %s"), *OptionsString)
 		GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
