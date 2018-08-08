@@ -32,19 +32,34 @@ void AABGameMode::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 
-	GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+	if (!bIsLobby) 
+	{
+		const FString MinimumPlayersKey = TEXT("MinimumPlayers");
+		const FString RoundTimeKey = TEXT("RoundTime");
+		const FString TimeBetweenMatchesKey = TEXT("TimeBetweenMatches");
+		const FString TimeBeforeMatchKey = TEXT("TimeBeforeMatch");
+
+		MinimumPlayers = UGameplayStatics::GetIntOption(OptionsString, MinimumPlayersKey, MinimumPlayers);
+		RoundTime = UGameplayStatics::GetIntOption(OptionsString, RoundTimeKey, RoundTime);
+		TimeBetweenMatches = UGameplayStatics::GetIntOption(OptionsString, TimeBetweenMatchesKey, TimeBetweenMatches);
+		TimeBeforeMatch = UGameplayStatics::GetIntOption(OptionsString, TimeBeforeMatchKey, TimeBeforeMatch);
+
+		UE_LOG(LogTemp, Warning, TEXT("OptionsString %s"), *OptionsString)
+		GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+	}
 }
 
 void AABGameMode::PreLogin(const FString & Options, const FString & Address, const FUniqueNetIdRepl & UniqueId, FString & ErrorMessage)
 {
 	AABGameState* const MyGameState = GetABGameState();
-	if (MyGameState->HasMatchEnded()) 
+
+	if (MyGameState && MyGameState->HasMatchEnded())
 	{
 		ErrorMessage = TEXT("Match has finished.");
 		UE_LOG(LogTemp, Warning, TEXT("Player could not join %s"), *ErrorMessage)
 	}
 	else
-	if (MyGameState->HasMatchStarted())
+	if (MyGameState && MyGameState->HasMatchStarted())
 	{
 		ErrorMessage = TEXT("Match has started.");
 		UE_LOG(LogTemp, Warning, TEXT("Player could not join %s"), *ErrorMessage)

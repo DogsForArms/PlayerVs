@@ -62,6 +62,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	int32 TimeBeforeMatch;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	bool bIsLobby;
+
 protected:
 	UFUNCTION()
 	virtual void ControllerNeedsSpectator(AController* Controller);
