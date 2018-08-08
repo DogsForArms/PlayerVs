@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Player/Types.h"
+#include "Types/Types.h"
 #include "PlayerWidget.generated.h"
 
 
