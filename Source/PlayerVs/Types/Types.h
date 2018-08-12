@@ -13,6 +13,7 @@ namespace GameConfigKeys
 	const FString MapKey = TEXT("Map");
 
 	const FString MinimumPlayersKey = TEXT("MinimumPlayers");
+	const FString MaximumPlayersKey = TEXT("MaximumPlayers");
 	const FString RoundTimeKey = TEXT("RoundTime");
 	const FString TimeBetweenMatchesKey = TEXT("TimeBetweenMatches");
 	const FString TimeBeforeMatchKey = TEXT("TimeBeforeMatch");
@@ -24,14 +25,28 @@ struct FGameConfig
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	FName ServerName;
+	FString ServerName;
 
 	UPROPERTY(BlueprintReadOnly)
-	FName Game;
+	FString Game;
 
 	UPROPERTY(BlueprintReadOnly)
-	FName Map;
+	FString Map;
 
+	UPROPERTY(BlueprintReadOnly)
+	int32 RoundTime;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MinimumPlayers;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MaximumPlayers;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 TimeBetweenMatches;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 TimeBeforeMatch;
 };
 
 UENUM(BlueprintType)

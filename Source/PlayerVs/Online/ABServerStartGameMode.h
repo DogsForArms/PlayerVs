@@ -2,16 +2,16 @@
 
 #pragma once
 
+#include "GameFramework/GameMode.h"
 #include "Types/Types.h"
 #include "CoreMinimal.h"
-#include "Online/ABGameMode.h"
 #include "ABServerStartGameMode.generated.h"
 
 /**
  * 
  */
-UCLASS()
-class PLAYERVS_API AABServerStartGameMode : public AABGameMode
+UCLASS(config=DedicatedServer)
+class PLAYERVS_API AABServerStartGameMode : public AGameMode
 {
 	GENERATED_BODY()
 	
@@ -20,4 +20,13 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FGameConfig ParseGameConfigFromCommandLine() const;
+
+	UPROPERTY(Config)
+	FString ServerName;
+
+	UPROPERTY(Config)
+	FString Map;
+
+	UPROPERTY(Config)
+	FString Game;
 };

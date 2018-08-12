@@ -15,6 +15,10 @@ FGameConfig AABServerStartGameMode::ParseGameConfigFromCommandLine() const
 {
 	FGameConfig GameConfig;
 
+	//GameConfig.ServerName = ServerName;
+	//GameConfig.Map = Map;
+	//GameConfig.Game = Game;
+
 	FParse::Value(FCommandLine::Get(), *GameConfigKeys::ServerNameKey, GameConfig.ServerName);
 	FParse::Value(FCommandLine::Get(), *GameConfigKeys::GameKey, GameConfig.Game);
 	FParse::Value(FCommandLine::Get(), *GameConfigKeys::MapKey, GameConfig.Map);
