@@ -135,7 +135,7 @@ public:
 	UFUNCTION()
 	bool CanPutInInventory(AActor* Actor);
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PutInInventory(AActor* Actor);
 
 	UFUNCTION(Server, Reliable, WithValidation)
