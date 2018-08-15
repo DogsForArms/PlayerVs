@@ -26,17 +26,26 @@ void AABTTTGameMode::HandleMatchHasEnded()
 	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		auto PS = Cast<AABTTTPlayerState>((*It)->PlayerState);
-		PS->All_Client_SetTeam(PS->GetTeam());		
+		PS->RevealAll();		
 	}
 }
 
-void AABTTTGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
+void AABTTTGameMode::Killed(AController* KillerController, AController* KilledController, APawn* KilledPawn, const UDamageType* DamageType)
 {
-	Super::Killed(Killer, KilledPlayer, KilledPawn, DamageType);
-	auto PS = Cast<AABTTTPlayerState>(KilledPlayer->PlayerState);
-	if (PS)
+	Super::Killed(KillerController, KilledController, KilledPawn, DamageType);
+	auto KilledState = Cast<AABTTTPlayerState>(KilledController->PlayerState);
+	auto KillerState = Cast<AABTTTPlayerState>(KillerController->PlayerState);
+	if (KilledState && KillerState)
 	{
-		PS->SetIsAlive(false);
+		KilledState->SetIsAlive(false);
+		if (KilledState->GetTeam() == ETeam::Alien)
+		{
+			KillerState->IncrementTraitorsKilled();
+		}
+		else
+		{
+			KillerState->IncrementInnocentsKilled();
+		}
 	}
 }
 
@@ -44,17 +53,27 @@ void AABTTTGameMode::AssignAliens(int AlienCount)
 {
 	check(AlienCount <= NumPlayers);
 
+	TArray<AABTTTPlayerState*> Traitors;
+
 	while (AlienCount > 0)
 	{
 		int AlienIndex = FMath::RandRange(0, NumPlayers - 1);
 		auto PS = Cast<AABTTTPlayerState>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex)->PlayerState);
 		if (PS->GetTeam() != ETeam::Alien)
 		{
-			PS->SetTeam(ETeam::Alien);
-			PS->Client_SetTeam(ETeam::Alien);
+			Traitors.Add(PS);
 			AlienCount--;
 		}
 	}
+
+	for (AABTTTPlayerState* Traitor : Traitors)
+	{
+		Traitor->SetTeam(ETeam::Alien);
+		Traitor->Client_SetTeam(ETeam::Alien);
+		Traitor->Client_SetTraitors(Traitors);
+	}
+
+
 }
 
 void AABTTTGameMode::UnassignedToInnocent()
