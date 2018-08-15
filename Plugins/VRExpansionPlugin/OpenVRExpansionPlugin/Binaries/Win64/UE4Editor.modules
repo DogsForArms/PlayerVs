@@ -1,7 +1,7 @@
 {
-	"BuildId": "3e71c293-e997-42ea-8ed3-4a0ef64cc6e4",
+	"BuildId": "f043bcf9-bc22-46ed-99f0-518130134ca9",
 	"Modules": 
 	{
-		"OpenVRExpansionPlugin": "UE4Editor-OpenVRExpansionPlugin.dll"
+		"OpenVRExpansionPlugin": "UE4Editor-OpenVRExpansionPlugin-6714.dll"
 	}
 }

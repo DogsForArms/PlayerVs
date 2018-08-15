@@ -5,6 +5,50 @@
 #include "CoreMinimal.h"
 #include "Types.generated.h"
 
+
+namespace GameConfigKeys
+{
+	const FString ServerNameKey = TEXT("ServerName");
+	const FString GameKey = TEXT("Game");
+	const FString MapKey = TEXT("Map");
+
+	const FString MinimumPlayersKey = TEXT("MinimumPlayers");
+	const FString MaximumPlayersKey = TEXT("MaximumPlayers");
+	const FString RoundTimeKey = TEXT("RoundTime");
+	const FString TimeBetweenMatchesKey = TEXT("TimeBetweenMatches");
+	const FString TimeBeforeMatchKey = TEXT("TimeBeforeMatch");
+}
+
+USTRUCT(BlueprintType)
+struct FGameConfig
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ServerName;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Game;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Map;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 RoundTime;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MinimumPlayers;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MaximumPlayers;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 TimeBetweenMatches;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 TimeBeforeMatch;
+};
+
 UENUM(BlueprintType)
 enum class ETeam : uint8
 {

@@ -6,12 +6,11 @@
 #include "Player/ABPlayerController.h"
 #include "Player/ABPlayerState.h"
 #include "GameFramework/PlayerStart.h"
+#include "Types/Types.h"
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	//static ConstructorHelpers::FClassFinder<APawn> PlayerPawnOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerOb(TEXT("/Game/Blueprints/Player/ABPlayerController_BP"));
-
 	static ConstructorHelpers::FClassFinder<APawn> CharacterOb(TEXT("/Game/Blueprints/Player/ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APawn> FPSCharacterOb(TEXT("/Game/Blueprints/Player/FPS_ABCharacter_BP"));
 	static ConstructorHelpers::FClassFinder<APawn> SpectatorOb(TEXT("/Game/Blueprints/Player/ABSpectator_BP"));
@@ -34,17 +33,13 @@ void AABGameMode::PreInitializeComponents()
 
 	if (!bIsLobby) 
 	{
-		const FString MinimumPlayersKey = TEXT("MinimumPlayers");
-		const FString RoundTimeKey = TEXT("RoundTime");
-		const FString TimeBetweenMatchesKey = TEXT("TimeBetweenMatches");
-		const FString TimeBeforeMatchKey = TEXT("TimeBeforeMatch");
+		UE_LOG(LogTemp, Warning, TEXT("XYZ Options: %s"), *OptionsString)
 
-		MinimumPlayers = UGameplayStatics::GetIntOption(OptionsString, MinimumPlayersKey, MinimumPlayers);
-		RoundTime = UGameplayStatics::GetIntOption(OptionsString, RoundTimeKey, RoundTime);
-		TimeBetweenMatches = UGameplayStatics::GetIntOption(OptionsString, TimeBetweenMatchesKey, TimeBetweenMatches);
-		TimeBeforeMatch = UGameplayStatics::GetIntOption(OptionsString, TimeBeforeMatchKey, TimeBeforeMatch);
+		MinimumPlayers = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::MinimumPlayersKey, MinimumPlayers);
+		RoundTime = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::RoundTimeKey, RoundTime);
+		TimeBetweenMatches = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::TimeBetweenMatchesKey, TimeBetweenMatches);
+		TimeBeforeMatch = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::TimeBeforeMatchKey, TimeBeforeMatch);
 
-		UE_LOG(LogTemp, Warning, TEXT("OptionsString %s"), *OptionsString)
 		GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 	}
 }
