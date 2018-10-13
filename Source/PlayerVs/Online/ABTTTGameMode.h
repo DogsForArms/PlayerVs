@@ -22,14 +22,9 @@ class PLAYERVS_API AABTTTGameMode : public AABGameMode
 protected:
 	/**
 		Assign PlayerStates to Alien team,
-		Alien Count must be <= NumPlayers!
+		Alien Count must be <= NumPlayers, the rest unassigned
 	*/
-	void AssignAliens(int AlienCount);
-
-	/**
-		PlayerStates that Unassigned will be set to Innocent
-	*/
-	void UnassignedToInnocent();
+	void AssignTeams(int AlienCount);
 
 	virtual void HandleMatchHasEnded() override;
 
