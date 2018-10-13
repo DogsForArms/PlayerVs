@@ -34,7 +34,7 @@ void AABTTTPlayerState::All_Client_SetAll_Implementation(ETeam Team, int32 Innoc
 void AABTTTPlayerState::SetTeam(ETeam Value)
 {
 	Team = Value;
-	OnTeamReveal.ExecuteIfBound(Team);
+	OnTeamReveal.Broadcast(Team);
 }
 
 ETeam AABTTTPlayerState::GetTeam() const

@@ -11,7 +11,7 @@
  * 
  */
 
-DECLARE_DELEGATE_OneParam(FOnRevealTeam, ETeam)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRevealTeam, ETeam, team);
 
 UCLASS()
 class PLAYERVS_API AABTTTPlayerState : public AABPlayerState
@@ -62,5 +62,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int32 GetTraitorsKilled() const;
 
+	UPROPERTY(BlueprintAssignable)
 	FOnRevealTeam OnTeamReveal;
 };
