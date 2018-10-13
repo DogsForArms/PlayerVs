@@ -10,6 +10,9 @@
 /**
  * 
  */
+
+DECLARE_DELEGATE_OneParam(FOnRevealTeam, ETeam)
+
 UCLASS()
 class PLAYERVS_API AABTTTPlayerState : public AABPlayerState
 {
@@ -18,7 +21,6 @@ class PLAYERVS_API AABTTTPlayerState : public AABPlayerState
 	AABTTTPlayerState();
 
 private:
-	TArray<AABPlayerState*> Traitors;
 
 	ETeam Team = ETeam::Unassigned;
 
@@ -60,4 +62,5 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int32 GetTraitorsKilled() const;
 
+	FOnRevealTeam OnTeamReveal;
 };

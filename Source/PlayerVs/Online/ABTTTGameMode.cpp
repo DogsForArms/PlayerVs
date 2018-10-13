@@ -15,9 +15,7 @@ AABTTTGameMode::AABTTTGameMode(const FObjectInitializer& ObjectInitializer) : Su
 void AABTTTGameMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
-
-	AssignAliens(FMath::Max(1, NumPlayers / 3));
-	UnassignedToInnocent();
+	AssignTeams(FMath::Max(1, NumPlayers / 3));
 }
 
 void AABTTTGameMode::HandleMatchHasEnded()
@@ -49,21 +47,19 @@ void AABTTTGameMode::Killed(AController* KillerController, AController* KilledCo
 	}
 }
 
-void AABTTTGameMode::AssignAliens(int AlienCount)
+void AABTTTGameMode::AssignTeams(int AlienCount)
 {
 	check(AlienCount <= NumPlayers);
 
 	TArray<AABTTTPlayerState*> Traitors;
+	TArray<APlayerState*> PlayerStates = GameState->PlayerArray;
 
-	while (AlienCount > 0)
+	while (AlienCount > Traitors.Num())
 	{
-		int AlienIndex = FMath::RandRange(0, NumPlayers - 1);
-		auto PS = Cast<AABTTTPlayerState>(UGameplayStatics::GetPlayerController(GetWorld(), AlienIndex)->PlayerState);
-		if (PS->GetTeam() != ETeam::Alien)
-		{
-			Traitors.Add(PS);
-			AlienCount--;
-		}
+		int AlienIndex = FMath::RandRange(0, PlayerStates.Num() - 1);
+		auto PS = Cast<AABTTTPlayerState>(PlayerStates[AlienIndex]);
+		PlayerStates.RemoveAt(AlienIndex);
+		Traitors.Add(PS);
 	}
 
 	for (AABTTTPlayerState* Traitor : Traitors)
@@ -73,19 +69,11 @@ void AABTTTGameMode::AssignAliens(int AlienCount)
 		Traitor->Client_SetTraitors(Traitors);
 	}
 
-
-}
-
-void AABTTTGameMode::UnassignedToInnocent()
-{
-	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	for (APlayerState* NonTraitor : PlayerStates)
 	{
-		auto PS = Cast<AABTTTPlayerState>((*It)->PlayerState);
-		if (PS->GetTeam() == ETeam::Unassigned)
-		{
-			PS->SetTeam(ETeam::Innocent);
-			PS->Client_SetTeam(ETeam::Innocent);
-		}
+		auto PS = Cast<AABTTTPlayerState>(NonTraitor);
+		PS->SetTeam(ETeam::Innocent);
+		PS->Client_SetTeam(ETeam::Innocent);
 	}
 }
 

@@ -14,7 +14,7 @@ void AABTTTPlayerState::Client_SetTraitors_Implementation(const TArray<AABTTTPla
 {
 	for (AABTTTPlayerState* Traitor : Traitors)
 	{
-		this->Traitors.Add(Traitor);
+		Traitor->SetTeam(ETeam::Alien);
 	}
 }
 
@@ -25,7 +25,7 @@ void AABTTTPlayerState::RevealAll()
 
 void AABTTTPlayerState::All_Client_SetAll_Implementation(ETeam Team, int32 InnocentsKilled, int32 TraitorsKilled, bool bIsAlive)
 {
-	this->Team = Team;
+	SetTeam(Team);
 	this->InnocentsKilled = InnocentsKilled;
 	this->TraitorsKilled = TraitorsKilled;
 	this->bIsAlive = bIsAlive;
@@ -34,6 +34,7 @@ void AABTTTPlayerState::All_Client_SetAll_Implementation(ETeam Team, int32 Innoc
 void AABTTTPlayerState::SetTeam(ETeam Value)
 {
 	Team = Value;
+	OnTeamReveal.ExecuteIfBound(Team);
 }
 
 ETeam AABTTTPlayerState::GetTeam() const
