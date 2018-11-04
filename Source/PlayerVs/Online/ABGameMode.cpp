@@ -33,12 +33,13 @@ void AABGameMode::PreInitializeComponents()
 
 	if (!bIsLobby) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("XYZ Options: %s"), *OptionsString)
-
 		MinimumPlayers = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::MinimumPlayersKey, MinimumPlayers);
 		RoundTime = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::RoundTimeKey, RoundTime);
 		TimeBetweenMatches = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::TimeBetweenMatchesKey, TimeBetweenMatches);
 		TimeBeforeMatch = UGameplayStatics::GetIntOption(OptionsString, GameConfigKeys::TimeBeforeMatchKey, TimeBeforeMatch);
+
+		UE_LOG(LogTemp, Warning, TEXT("MinimumPlayers: %i, RoundTime: %i, TimeBetweenMatches: %i, TimeBeforeMatch: %i"), MinimumPlayers, RoundTime, TimeBetweenMatches, TimeBeforeMatch)
+		UE_LOG(LogTemp, Warning, TEXT("Options: %s"), *OptionsString)
 
 		GetWorldTimerManager().SetTimer(TimerHandle_DefaultTimer, this, &AABGameMode::DefaultTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 	}
@@ -104,11 +105,19 @@ bool AABGameMode::ReadyToStartMatch_Implementation()
 	return false;
 }
 
+
+void AABGameMode::SetMatchState(FName NewState) {
+	FName CurrentState = GetMatchState();
+	if (NewState != CurrentState) {
+		UE_LOG(LogTemp, Warning, TEXT("MatchState Change (%s -> %s)"), *CurrentState.ToString(), *NewState.ToString())
+		Super::SetMatchState(NewState);
+	}
+}
+
 void AABGameMode::DefaultTimer()
 {
 	AABGameState* GS = GetABGameState();
 	if (!GS) return;
-	UE_LOG(LogTemp, Warning, TEXT("DefaultTimer GetMatchState: %s (%d)"), *GetMatchState().ToString(), GS->RemainingTime)
 
 	if (GameCanStartCountdown())
 	{
@@ -134,7 +143,6 @@ void AABGameMode::DefaultTimer()
 			else
 			if (HasMatchEnded())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("DefaultTimer HasMatchEnded!"))
 				RestartGame();
 			}
 		}

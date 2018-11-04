@@ -41,6 +41,8 @@ protected:
 
 	virtual void OnMatchStateSet();
 
+	virtual void SetMatchState(FName NewState) override;
+
 	//virtual void HandleMatchIsWaitingToStart() override;
 	
 protected:	
