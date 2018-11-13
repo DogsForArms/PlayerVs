@@ -47,6 +47,7 @@ void AABGameMode::PreInitializeComponents()
 
 void AABGameMode::PreLogin(const FString & Options, const FString & Address, const FUniqueNetIdRepl & UniqueId, FString & ErrorMessage)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ABGameMode:PreLogin"))
 	AABGameState* const MyGameState = GetABGameState();
 
 	if (MyGameState && MyGameState->HasMatchEnded())
