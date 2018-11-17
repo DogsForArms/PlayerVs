@@ -85,6 +85,7 @@ void AABGameMode::HandleMatchStartingCountdown()
 {
 	auto GS = GetABGameState();
 	if (GS) GS->RemainingTime = TimeBeforeMatch;
+	UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = TimeBeforeMatch ( %d )"), TimeBeforeMatch);
 }
 
 void AABGameMode::HandleMatchIsWaitingToStart()
@@ -98,6 +99,7 @@ void AABGameMode::HandleMatchHasStarted()
 
 	auto GS = GetABGameState();
 	if (GS) GS->RemainingTime = RoundTime;
+	UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = RoundTime ( %d )"), RoundTime);
 }
 
 // Handling of MatchState is manual
@@ -268,5 +270,6 @@ void AABGameMode::FinishMatch()
 		}
 
 		GS->RemainingTime = TimeBetweenMatches;
+		UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = TimeBetweenMatches ( %d )"), TimeBetweenMatches);
 	}
 }

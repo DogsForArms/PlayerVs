@@ -43,4 +43,18 @@ public:
 	UPROPERTY(Config)
 	int32 TimeBeforeMatch;
 
+	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
+	bool bAdvancedSession;
+
+	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
+	bool bLan;
+
+	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
+	bool bUsePresence;
+
+	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
+	bool bShouldAdvertise;
+
+	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
+	bool bAllowJoinViaPresence;
 };
