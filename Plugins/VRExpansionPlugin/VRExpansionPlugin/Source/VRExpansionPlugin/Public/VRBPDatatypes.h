@@ -2,7 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "EngineMinimal.h"
+//#include "EngineMinimal.h"
 
 #include "PhysicsPublic.h"
 #if WITH_PHYSX
@@ -13,6 +13,7 @@
 #include "VRBPDatatypes.generated.h"
 
 class UGripMotionControllerComponent;
+class UVRGripScriptBase;
 
 UENUM(Blueprintable)
 enum class EVRInteractibleAxis : uint8
@@ -305,6 +306,16 @@ enum class EVRVectorQuantization : uint8
 	RoundTwoDecimals = 1
 };
 
+UENUM()
+enum class EVRRotationQuantization : uint8
+{
+	/** Each rotation component will be rounded to 10 bits (1024 values). */
+	RoundTo10Bits = 0,
+	/** Each rotation component will be rounded to a short. */
+	RoundToShort = 1
+};
+
+
 USTRUCT()
 struct VREXPANSIONPLUGIN_API FBPVRComponentPosRep
 {
@@ -316,13 +327,35 @@ public:
 	UPROPERTY(Transient)
 		FRotator Rotation;
 
+	// The quantization level to use for the vector components
 	UPROPERTY(EditDefaultsOnly, Category = Replication, AdvancedDisplay)
 		EVRVectorQuantization QuantizationLevel;
 
+	// The quantization level to use for the rotation components
+	// Using 10 bits mode saves approx 2.25 bytes per replication.
+	UPROPERTY(EditDefaultsOnly, Category = Replication, AdvancedDisplay)
+		EVRRotationQuantization RotationQuantizationLevel;
+
+	FORCEINLINE uint16 CompressAxisTo10BitShort(float Angle)
+	{
+		// map [0->360) to [0->1024) and mask off any winding
+		return FMath::RoundToInt(Angle * 1024.f / 360.f) & 0xFFFF;
+	}
+
+
+	FORCEINLINE float DecompressAxisFrom10BitShort(uint16 Angle)
+	{
+		// map [0->1024) to [0->360)
+		return (Angle * 360.f / 1024.f);
+	}
+
 	FBPVRComponentPosRep():
-		QuantizationLevel(EVRVectorQuantization::RoundTwoDecimals)
+		QuantizationLevel(EVRVectorQuantization::RoundTwoDecimals),
+		RotationQuantizationLevel(EVRRotationQuantization::RoundToShort)
 	{
 		//QuantizationLevel = EVRVectorQuantization::RoundTwoDecimals;
+		Position = FVector::ZeroVector;
+		Rotation = FRotator::ZeroRotator;
 	}
 
 	/** Network serialization */
@@ -334,6 +367,7 @@ public:
 		// Defines the level of Quantization
 		//uint8 Flags = (uint8)QuantizationLevel;
 		Ar.SerializeBits(&QuantizationLevel, 1); // Only two values 0:1
+		Ar.SerializeBits(&RotationQuantizationLevel, 1); // Only two values 0:1
 
 		// No longer using their built in rotation rep, as controllers will rarely if ever be at 0 rot on an axis and 
 		// so the 1 bit overhead per axis is just that, overhead
@@ -343,21 +377,43 @@ public:
 		uint16 ShortYaw = 0;
 		uint16 ShortRoll = 0;
 		
+		/**
+		*	Valid range 100: 2^22 / 100 = +/- 41,943.04 (419.43 meters)
+		*	Valid range 10: 2^18 / 10 = +/- 26,214.4 (262.144 meters)
+		*	Pos rep is assumed to be in relative space for a tracked component, these numbers should be fine
+		*/
 		if (Ar.IsSaving())
 		{		
 			switch (QuantizationLevel)
 			{
-			case EVRVectorQuantization::RoundTwoDecimals: bOutSuccess &= SerializePackedVector<100, 30>(Position, Ar); break;
-			case EVRVectorQuantization::RoundOneDecimal: bOutSuccess &= SerializePackedVector<10, 24>(Position, Ar); break;
+			case EVRVectorQuantization::RoundTwoDecimals: bOutSuccess &= SerializePackedVector<100, 22/*30*/>(Position, Ar); break;
+			case EVRVectorQuantization::RoundOneDecimal: bOutSuccess &= SerializePackedVector<10, 18/*24*/>(Position, Ar); break;
 			}
 
-			ShortPitch = FRotator::CompressAxisToShort(Rotation.Pitch);
-			ShortYaw = FRotator::CompressAxisToShort(Rotation.Yaw);
-			ShortRoll = FRotator::CompressAxisToShort(Rotation.Roll);
+			switch (RotationQuantizationLevel)
+			{
+			case EVRRotationQuantization::RoundTo10Bits:
+			{
+				ShortPitch = CompressAxisTo10BitShort(Rotation.Pitch);
+				ShortYaw = CompressAxisTo10BitShort(Rotation.Yaw);
+				ShortRoll = CompressAxisTo10BitShort(Rotation.Roll);
 
-			Ar << ShortPitch;
-			Ar << ShortYaw;
-			Ar << ShortRoll;
+				Ar.SerializeBits(&ShortPitch, 10);
+				Ar.SerializeBits(&ShortYaw, 10);
+				Ar.SerializeBits(&ShortRoll, 10);
+			}break;
+
+			case EVRRotationQuantization::RoundToShort:
+			{
+				ShortPitch = FRotator::CompressAxisToShort(Rotation.Pitch);
+				ShortYaw = FRotator::CompressAxisToShort(Rotation.Yaw);
+				ShortRoll = FRotator::CompressAxisToShort(Rotation.Roll);
+
+				Ar << ShortPitch;
+				Ar << ShortYaw;
+				Ar << ShortRoll;
+			}break;
+			}
 		}
 		else // If loading
 		{
@@ -365,17 +421,34 @@ public:
 
 			switch (QuantizationLevel)
 			{
-			case EVRVectorQuantization::RoundTwoDecimals: bOutSuccess &= SerializePackedVector<100, 30>(Position, Ar); break;
-			case EVRVectorQuantization::RoundOneDecimal: bOutSuccess &= SerializePackedVector<10, 24>(Position, Ar); break;
+			case EVRVectorQuantization::RoundTwoDecimals: bOutSuccess &= SerializePackedVector<100, 22/*30*/>(Position, Ar); break;
+			case EVRVectorQuantization::RoundOneDecimal: bOutSuccess &= SerializePackedVector<10, 18/*24*/>(Position, Ar); break;
 			}
 
-			Ar << ShortPitch;
-			Ar << ShortYaw;
-			Ar << ShortRoll;
-			
-			Rotation.Pitch = FRotator::DecompressAxisFromShort(ShortPitch);
-			Rotation.Yaw = FRotator::DecompressAxisFromShort(ShortYaw);
-			Rotation.Roll = FRotator::DecompressAxisFromShort(ShortRoll);
+			switch (RotationQuantizationLevel)
+			{
+			case EVRRotationQuantization::RoundTo10Bits:
+			{
+				Ar.SerializeBits(&ShortPitch, 10);
+				Ar.SerializeBits(&ShortYaw, 10);
+				Ar.SerializeBits(&ShortRoll, 10);
+
+				Rotation.Pitch = DecompressAxisFrom10BitShort(ShortPitch);
+				Rotation.Yaw = DecompressAxisFrom10BitShort(ShortYaw);
+				Rotation.Roll = DecompressAxisFrom10BitShort(ShortRoll);
+			}break;
+
+			case EVRRotationQuantization::RoundToShort:
+			{
+				Ar << ShortPitch;
+				Ar << ShortYaw;
+				Ar << ShortRoll;
+
+				Rotation.Pitch = FRotator::DecompressAxisFromShort(ShortPitch);
+				Rotation.Yaw = FRotator::DecompressAxisFromShort(ShortYaw);
+				Rotation.Roll = FRotator::DecompressAxisFromShort(ShortRoll);
+			}break;
+			}
 		}
 
 		return bOutSuccess;
@@ -406,7 +479,7 @@ enum class EGripCollisionType : uint8
 	/** Uses Stiffness and damping settings on collision, on no collision uses stiffness values 10x stronger so it has less play. */
 	InteractiveHybridCollisionWithPhysics,
 
-	/** Uses Stiffness and damping settings on collision, on no collision uses stiffness values 10x stronger, no weight. */
+	/** Swaps back and forth between physx grip and a sweep type grip depending on if the held object will be colliding this frame or not. */
 	InteractiveHybridCollisionWithSweep,
 
 	/** Only sweeps movement, will not be offset by geomtry, still pushes physics simulating objects, no weight. */
@@ -460,15 +533,24 @@ enum class EGripLerpState : uint8
 UENUM(Blueprintable)
 enum class ESecondaryGripType : uint8
 {
-	SG_None, // No secondary grip
-	SG_Free, // Free secondary grip
-	SG_SlotOnly, // Only secondary grip at a slot
-	SG_Free_Retain, // Retain pos on drop
+	// No secondary grip
+	SG_None, 
+	// Free secondary grip
+	SG_Free, 
+	// Only secondary grip at a slot
+	SG_SlotOnly, 
+	// Retain pos on drop
+	SG_Free_Retain, 
+	// Retain pos on drop, slot only
 	SG_SlotOnly_Retain, 
-	SG_FreeWithScaling_Retain, // Scaling with retain pos on drop
+	// Scaling with retain pos on drop
+	SG_FreeWithScaling_Retain, 
+	// Scaling with retain pos on drop, slot only
 	SG_SlotOnlyWithScaling_Retain,
-	SG_Custom, // Does nothing, just provides the events for personal use
-	SG_ScalingOnly, // Does not track the hand, only scales the mesh with it
+	// Does nothing, just provides the events for personal use
+	SG_Custom, 
+	// Does not track the hand, only scales the mesh with it
+	SG_ScalingOnly, 
 };
 
 // Grip Late Update information
@@ -1010,6 +1092,8 @@ public:
 	{}
 };*/
 
+#define INVALID_VRGRIP_ID 0
+
 USTRUCT(BlueprintType, Category = "VRExpansionLibrary")
 struct VREXPANSIONPLUGIN_API FBPActorGripInformation
 {
@@ -1106,7 +1190,7 @@ public:
 			CachedStiffness(1500.0f),
 			CachedDamping(200.0f),
 			CachedBoneName(NAME_None),
-			CachedGripID(0)
+			CachedGripID(INVALID_VRGRIP_ID)
 		{}
 
 	}ValueCache;
@@ -1144,8 +1228,9 @@ public:
 		this->bOriginalGravity = Other.bOriginalGravity;
 		this->Damping = Other.Damping;
 		this->Stiffness = Other.Stiffness;
-		this->AdvancedGripSettings = Other.AdvancedGripSettings;
-		this->SecondaryGripInfo = Other.SecondaryGripInfo;
+		this->AdvancedGripSettings = Other.AdvancedGripSettings;		
+		this->SecondaryGripInfo.RepCopy(Other.SecondaryGripInfo); // Run the replication copy version so we don't overwrite vars
+		//this->SecondaryGripInfo = Other.SecondaryGripInfo;
 
 		return *this;
 	}
@@ -1165,7 +1250,7 @@ public:
 	//This is here for the Find() function from TArray
 	FORCEINLINE bool operator==(const FBPActorGripInformation &Other) const
 	{
-		if (GripID == Other.GripID)
+		if ((GripID != INVALID_VRGRIP_ID) && (GripID == Other.GripID) )
 			return true;
 			//if (GrippedObject && GrippedObject == Other.GrippedObject)
 			//return true;
@@ -1199,14 +1284,14 @@ public:
 
 	FORCEINLINE bool operator==(const uint8& Other) const
 	{
-		if (GripID == Other)
+		if ((GripID != INVALID_VRGRIP_ID) && (GripID == Other))
 			return true;
 
 		return false;
 	}
 
 	FBPActorGripInformation() :
-		GripID(0),
+		GripID(INVALID_VRGRIP_ID),
 		GripTargetType(EGripTargetType::ActorGrip),
 		GrippedObject(nullptr),
 		GripCollisionType(EGripCollisionType::InteractiveCollisionWithPhysics),
@@ -1236,6 +1321,9 @@ struct VREXPANSIONPLUGIN_API FBPInterfaceProperties
 {
 	GENERATED_BODY()
 public:
+
+	//UPROPERTY(EditAnywhere, NotReplicated, BlueprintReadWrite, Instanced, Category = "VRGripInterface")
+		//TArray<class UVRGripScriptBase *> GripLogicScripts;
 		
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRGripInterface")
 		bool bDenyGripping;
@@ -1332,7 +1420,7 @@ public:
 	uint8 GripID;
 
 	/** Physics scene index of the body we are grabbing. */
-	int32 SceneIndex;
+	//int32 SceneIndex; // No longer needed, retrieved at runtime
 	/** Pointer to PhysX joint used by the handle*/
 	physx::PxD6Joint* HandleData;
 	/** Pointer to kinematic actor jointed to grabbed object */
@@ -1351,14 +1439,14 @@ public:
 		//Actor = nullptr;
 		//Component = nullptr;
 		COMPosition = U2PTransform(FTransform::Identity);
-		GripID = 0;
+		GripID = INVALID_VRGRIP_ID;
 		RootBoneRotation = FTransform::Identity;
 		bSetCOM = false;
 	}
 
 	FORCEINLINE bool operator==(const FBPActorGripInformation & Other) const
 	{
-		return (GripID == Other.GripID);
+		return ((GripID != INVALID_VRGRIP_ID) && (GripID == Other.GripID));
 	}
 
 };

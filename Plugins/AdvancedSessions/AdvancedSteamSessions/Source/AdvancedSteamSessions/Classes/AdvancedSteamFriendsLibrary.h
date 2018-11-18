@@ -12,7 +12,8 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "Engine/GameInstance.h"
 #include "Interfaces/OnlineSessionInterface.h"
-#include "UObjectIterator.h"
+#include "BlueprintDataDefinitions.h"
+#include "UObject/UObjectIterator.h"
 
 // This is taken directly from UE4 - OnlineSubsystemSteamPrivatePCH.h as a fix for the array_count macro
 // @todo Steam: Steam headers trigger secure-C-runtime warnings in Visual C++. Rather than mess with _CRT_SECURE_NO_WARNINGS, we'll just
@@ -296,11 +297,10 @@ public:
 	static FBPUniqueNetId CreateSteamIDFromString(const FString SteamID64);
 
 	/* Gets the current game played by a friend - AppID is int32 even though steam ids are uint32, can't be helped in blueprint currently
-	*  The game name is retrieved from steamSDK AppList which isn't available to all game IDs without request, can use the AppID with the
-	*  WebAPI GetAppList request as an alternative.
+	*  can use the AppID with the WebAPI GetAppList request.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Online|AdvancedFriends|SteamAPI", meta = (ExpandEnumAsExecs = "Result"))
-	static void GetSteamFriendGamePlayed(const FBPUniqueNetId UniqueNetId, EBlueprintResultSwitch &Result, FString & GameName, int32 & AppID);
+	static void GetSteamFriendGamePlayed(const FBPUniqueNetId UniqueNetId, EBlueprintResultSwitch &Result/*, FString & GameName*/, int32 & AppID);
 
 	// Get a full list of steam groups
 	UFUNCTION(BlueprintCallable, Category = "Online|SteamAPI|SteamGroups")
