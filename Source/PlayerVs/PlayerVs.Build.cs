@@ -8,15 +8,14 @@ public class PlayerVs : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "VRExpansionPlugin", "OnlineSubsystem" });
-
-        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "VRExpansionPlugin", "OnlineSubsystem", "OnlineSubsystemUtils" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore", "HeadMountedDisplay", "SteamVR" });
         
 		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
+		PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
+        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }

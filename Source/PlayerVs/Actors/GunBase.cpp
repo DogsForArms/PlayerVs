@@ -5,7 +5,9 @@
 //#include "GameplayTagsManager.h"
 #include "Actors/BulletBase.h"
 #include "Components/ArrowComponent.h"
+#include "Components/AudioComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization

@@ -7,6 +7,7 @@
 #include "Player/ABPlayerState.h"
 #include "GameFramework/PlayerStart.h"
 #include "Types/Types.h"
+#include "Kismet/GameplayStatics.h"
 
 AABGameMode::AABGameMode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -47,6 +48,7 @@ void AABGameMode::PreInitializeComponents()
 
 void AABGameMode::PreLogin(const FString & Options, const FString & Address, const FUniqueNetIdRepl & UniqueId, FString & ErrorMessage)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ABGameMode:PreLogin"))
 	AABGameState* const MyGameState = GetABGameState();
 
 	if (MyGameState && MyGameState->HasMatchEnded())
@@ -84,6 +86,7 @@ void AABGameMode::HandleMatchStartingCountdown()
 {
 	auto GS = GetABGameState();
 	if (GS) GS->RemainingTime = TimeBeforeMatch;
+	UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = TimeBeforeMatch ( %d )"), TimeBeforeMatch);
 }
 
 void AABGameMode::HandleMatchIsWaitingToStart()
@@ -97,6 +100,7 @@ void AABGameMode::HandleMatchHasStarted()
 
 	auto GS = GetABGameState();
 	if (GS) GS->RemainingTime = RoundTime;
+	UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = RoundTime ( %d )"), RoundTime);
 }
 
 // Handling of MatchState is manual
@@ -267,5 +271,6 @@ void AABGameMode::FinishMatch()
 		}
 
 		GS->RemainingTime = TimeBetweenMatches;
+		UE_LOG(LogTemp, Warning, TEXT("GS->RemainingTime = TimeBetweenMatches ( %d )"), TimeBetweenMatches);
 	}
 }

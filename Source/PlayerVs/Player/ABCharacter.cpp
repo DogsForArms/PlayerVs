@@ -2,6 +2,7 @@
 
 #include "ABCharacter.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "MotionControllerComponent.h"
 #include "Animation/SkeletalMeshActor.h"
@@ -146,7 +147,7 @@ bool AABCharacter::HandIsInHolster(UGripMotionControllerComponent* Hand)
 
 void AABCharacter::TrySetupTalker()
 {
-	if (PlayerState)
+	if (GetPlayerState())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(WaitForPlayerStateHandle);
 		SetupTalker();
@@ -164,7 +165,7 @@ void AABCharacter::SetupTalker()
 	FVoiceSettings Settings = Talker->Settings;
 	Settings.ComponentToAttachTo = VRReplicatedCamera;
 	Talker->Settings = Settings;
-	Talker->RegisterWithPlayerState(PlayerState);
+	Talker->RegisterWithPlayerState(GetPlayerState());
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
 	{
