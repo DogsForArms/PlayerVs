@@ -50,11 +50,5 @@ public:
 	bool bLan;
 
 	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
-	bool bUsePresence;
-
-	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
 	bool bShouldAdvertise;
-
-	UPROPERTY(Config, BlueprintReadOnly, Category = "Config")
-	bool bAllowJoinViaPresence;
 };
