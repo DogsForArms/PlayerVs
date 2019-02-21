@@ -121,6 +121,7 @@ void AABGameMode::SetMatchState(FName NewState) {
 void AABGameMode::DefaultTimer()
 {
 	AABGameState* GS = GetABGameState();
+	UE_LOG(LogTemp, Warning, TEXT("Tick: %d"), GS->RemainingTime);
 	if (!GS) return;
 
 	if (GameCanStartCountdown())
