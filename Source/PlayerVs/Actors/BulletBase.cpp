@@ -87,13 +87,15 @@ void ABulletBase::OnImpact(const FHitResult& Impact)
 		bExploded = true;
 		OnRep_Exploded();
 
-		FPointDamageEvent PointDmg;
-		PointDmg.DamageTypeClass = DamageType;
-		PointDmg.HitInfo = Impact;
-		//PointDmg.ShotDirection = ShootDir;
-		PointDmg.Damage = HitDamage;
-
-		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
+		if (Impact.GetActor()) 
+		{
+			FPointDamageEvent PointDmg;
+			PointDmg.DamageTypeClass = DamageType;
+			PointDmg.HitInfo = Impact;
+			//PointDmg.ShotDirection = ShootDir;
+			PointDmg.Damage = HitDamage;
+			Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
+		}
 	}
 }
 
