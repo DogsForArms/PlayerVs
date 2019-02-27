@@ -296,7 +296,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	{
 		IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Result.Component);
 		IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Result.Actor);
-		UE_LOG(LogTemp, Warning, TEXT("GripResultScan %s"), *Result.Actor->GetName())
+		UE_LOG(LogTemp, Warning, TEXT("GripResultScan Actor %s"), (Result.Actor ? *Result.Actor->GetName() : *FString("NULL")))
 
 		if (GrippableComponent)
 		{
@@ -304,6 +304,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 			Result.ObjectTransform = Result.Component->GetComponentTransform();
 		}
 		else
+		if (Result.Actor)
 		{
 			Result.ObjectToGrip = Result.Actor;
 			Result.ObjectTransform = Result.Actor->GetActorTransform();
