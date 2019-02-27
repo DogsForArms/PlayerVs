@@ -14,4 +14,4 @@ USER steam
 
 EXPOSE 7777/udp 7778/udp 27015/udp
 
-ENTRYPOINT /var/lib/steam/playervs-dedicated/PlayerVsServer.sh -log -Map Warehouse
+ENTRYPOINT /var/lib/steam/playervs-dedicated/PlayerVsServer.sh -log -Map Temple
