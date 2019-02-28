@@ -507,7 +507,7 @@ void AABCharacter::DropAll(EControllerHand EHand)
 		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
 		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
 
-		Hand->DropObject(GrippedActor, true);
+		Hand->DropObject(GrippedActor, 0, true);
 		if (bInventory)
 		{
 			PutInInventory(GrippedActor);
