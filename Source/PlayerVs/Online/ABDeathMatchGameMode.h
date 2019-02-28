@@ -16,6 +16,7 @@ class PLAYERVS_API AABDeathMatchGameMode : public AABGameMode
 	GENERATED_UCLASS_BODY()
 	
 public:
+	virtual void PostInitProperties() override;
 
 	virtual void Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType) override;
 
