@@ -121,7 +121,6 @@ void AABGameMode::SetMatchState(FName NewState) {
 void AABGameMode::DefaultTimer()
 {
 	AABGameState* GS = GetABGameState();
-	UE_LOG(LogTemp, Warning, TEXT("Tick: %d"), GS->RemainingTime);
 	if (!GS) return;
 
 	if (GameCanStartCountdown())
@@ -161,6 +160,8 @@ void AABGameMode::DefaultTimer()
 void AABGameMode::ControllerNeedsCharacter(AController* Controller, bool HMDEnabled, FVector HMDOffset, FRotator HMDRotation)
 {
 	FTransform SpawnTransform;
+	
+	UE_LOG(LogTemp, Warning, TEXT("ControllerNeedsCharacter: %s"), Controller->PlayerState ? *Controller->PlayerState->PlayerName : *FString("NULL"))
 
 	TArray<AActor*> Spawns;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Spawns);

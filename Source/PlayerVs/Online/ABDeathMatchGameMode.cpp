@@ -12,6 +12,12 @@ AABDeathMatchGameMode::AABDeathMatchGameMode(const FObjectInitializer& ObjectIni
 	MaxKills = 20;
 }
 
+void AABDeathMatchGameMode::PostInitProperties()
+{
+	Super::PostInitProperties();
+	UE_LOG(LogTemp, Warning, TEXT("AABDeathMatchGameMode::PostInitProperties RoundTime: %d, TimeBetweenMatches: %d, MinimumPlayers: %d, TimeBeforeMatch: %d"), RoundTime, TimeBetweenMatches, MinimumPlayers, TimeBeforeMatch)
+}
+
 void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlayer, APawn* KilledPawn, const UDamageType* DamageType)
 {
 	AABPlayerController* KilledPC = Cast<AABPlayerController>(KilledPlayer);
