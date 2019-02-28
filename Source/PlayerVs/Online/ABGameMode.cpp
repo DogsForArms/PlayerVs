@@ -147,7 +147,8 @@ void AABGameMode::DefaultTimer()
 			else
 			if (HasMatchEnded())
 			{
-				RestartGame();
+				UE_LOG(LogTemp, Warning, TEXT("Match has ended"))
+				// RestartGame();
 			}
 		}
 	}
