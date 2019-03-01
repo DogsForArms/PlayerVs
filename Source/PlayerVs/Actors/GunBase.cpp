@@ -117,3 +117,20 @@ void AGunBase::PlayGunEffects()
 {
 	GunfireAudio->Play();
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Calculates Is Aiming & Movement Modifications
+bool AGunBase::CalculateIsAimed() const
+{
+	float DegreesFromGroundToMuzzle = FMath::RadiansToDegrees(
+		FMath::Acos(
+			FVector::DotProduct(FVector(0.f, 0.f, -1.f), Muzzle->GetForwardVector())
+		)
+	);
+	return DegreesFromGroundToMuzzle > AimThreshold;
+}
+
+float AGunBase::CalculateMovementModifier() const
+{
+	return CalculateIsAimed() ? AimMovementModifier : 1.f;
+}

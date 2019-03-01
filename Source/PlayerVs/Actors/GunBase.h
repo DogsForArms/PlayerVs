@@ -41,11 +41,30 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 	UArrowComponent* Muzzle;
 
-public:
-
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* GunfireAudio;
 
+//////////////////////////////////////////////////////////////////////////
+// Calculates Is Aiming & Movement Modifications
+protected:
+	// When gun is Aiming character's default movement speed gets multiplied by this [0,1] value.
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float AimMovementModifier = 0.5;
+
+	// Decides when gun is Aiming - the cutoff angle in degrees between the Down vector and muzzle's Forward.
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float AimThreshold = 65.f;
+
+	// Decides if gun is being aimed.
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	bool CalculateIsAimed() const;
+
+public:
+	// Applies AimMovementModifier if gun IsBeingAimed
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	float CalculateMovementModifier() const;
+
+// Misc
 public:	
 	AGunBase();
 	bool bCanBeFired;
