@@ -150,6 +150,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPutInInventory(AActor* GrippedActor, FTransform_NetQuantize transform);
 
+	void UseLeftAxis(float value);
 	void UseLeft();
 	void StopUseLeft();
 	void UseRight();

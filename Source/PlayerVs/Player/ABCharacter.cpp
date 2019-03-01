@@ -192,6 +192,7 @@ void AABCharacter::Tick(float DeltaTime)
 	}
 
 	if (IsLocallyControlled() || HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("UPdate Char movement IsLocallControlled() %d HasAuthority() %d"), IsLocallyControlled(), HasAuthority())
 		GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
 	}
 }
@@ -253,6 +254,8 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAxis("RightRH", this, &AABCharacter::MoveRH);
 	PlayerInputComponent->BindAxis("ForwardLH", this, &AABCharacter::MoveLH);
 	PlayerInputComponent->BindAxis("RightLH", this, &AABCharacter::MoveLH);
+
+	PlayerInputComponent->BindAxis("UseLeftAxis", this, &AABCharacter::UseLeftAxis);
 
 	PlayerInputComponent->BindAction("GrabLeft", IE_Pressed, this, &AABCharacter::GrabLeft);
 	PlayerInputComponent->BindAction("GrabRight", IE_Pressed, this, &AABCharacter::GrabRight);
@@ -594,6 +597,10 @@ bool AABCharacter::ServerDropAll_Validate(EControllerHand EHand)
 
 //////////////////////////////////////////////////////////////////////////
 // Input - Grab or Use
+void AABCharacter::UseLeftAxis(float value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("UseLeftAxis %f"), value)
+}
 
 void AABCharacter::UseLeft()
 {
