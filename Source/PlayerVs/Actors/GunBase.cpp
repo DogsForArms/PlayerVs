@@ -53,7 +53,6 @@ void AGunBase::OnGrip_Implementation(UGripMotionControllerComponent* GrippingCon
 void AGunBase::OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketedValue)
 {
 	Super::OnGripRelease_Implementation(ReleasingController, GripInformation, bWasSocketed);
-	UE_LOG(LogTemp, Warning, TEXT("OnGripRelease_Implementation"));
 	bWasSocketed = bWasSocketedValue;
 	SetActorTickEnabled(true);
 }
@@ -73,7 +72,6 @@ void AGunBase::OnUsed_Implementation()
 void AGunBase::OnEndUsed_Implementation()
 {
 	Super::OnEndUsed_Implementation();
-	UE_LOG(LogTemp, Warning, TEXT("Gun OnEndUsed_Implementation PEW PEW"))
 }
 
 //////////////////////////////////////////////////////////////////////////
