@@ -127,10 +127,7 @@ bool AGunBase::CalculateIsAimed() const
 			FVector::DotProduct(FVector(0.f, 0.f, -1.f), Muzzle->GetForwardVector())
 		)
 	);
-	bool Result = DegreesFromGroundToMuzzle > AimThreshold;
-
-	UE_LOG(LogTemp, Warning, TEXT("IsBeingAimed: %f result: %d"), DegreesFromGroundToMuzzle, Result);
-	return Result;
+	return DegreesFromGroundToMuzzle > AimThreshold;
 }
 
 float AGunBase::CalculateMovementModifier() const

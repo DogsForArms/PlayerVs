@@ -190,7 +190,11 @@ void AABCharacter::Tick(float DeltaTime)
 		UpdateWidgetInteraction(WidgetInteractionLeft);
 		UpdateWidgetInteraction(WidgetInteractionRight);
 	}
-	GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
+
+	if (IsLocallyControlled() || HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("UPdate Char movement IsLocallControlled() %d HasAuthority() %d"), IsLocallyControlled(), HasAuthority())
+		GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
+	}
 }
 
 void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction)
