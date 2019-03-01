@@ -24,6 +24,8 @@ public: //Initialization
 
 	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const;
 
+	virtual void PostInitializeComponents() override;
+
 	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker) override;
 
 	virtual void BeginPlay() override;
@@ -35,8 +37,6 @@ public: //Initialization
 	void OnEndOverlapHolster(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	bool HandIsInHolster(UGripMotionControllerComponent* Hand);
-
-	virtual void Tick(float DeltaTime) override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -66,9 +66,15 @@ public: //Initialization
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite)
 	USphereComponent* RightHandGrabArea;
 
-
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float GripTraceLength;
+
+public:
+	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	float CalculateGunAimMovementModifier() const;
+
 
 private: //VOIPTalker Setup
 	FTimerHandle WaitForPlayerStateHandle;
@@ -79,6 +85,9 @@ private: //VOIPTalker Setup
 
 	UFUNCTION()
 	void SetupTalker();
+
+	// Temp storing the original walk speed from movement component
+	float OriginalWalkSpeed;
 
 public: //Debugging
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Voice")

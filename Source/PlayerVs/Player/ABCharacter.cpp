@@ -76,6 +76,12 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer) : Super(
 	Health = 100.f;
 }
 
+void AABCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	OriginalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+}
+
 void AABCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
@@ -179,8 +185,12 @@ void AABCharacter::SetupTalker()
 void AABCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UpdateWidgetInteraction(WidgetInteractionLeft);
-	UpdateWidgetInteraction(WidgetInteractionRight);
+	if (IsLocallyControlled())
+	{
+		UpdateWidgetInteraction(WidgetInteractionLeft);
+		UpdateWidgetInteraction(WidgetInteractionRight);
+	}
+	GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
 }
 
 void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction)
@@ -193,6 +203,24 @@ void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetIn
 	{
 		WidgetInteraction->bShowDebug = false;
 	}
+}
+
+float AABCharacter::CalculateGunAimMovementModifier() const
+{
+	TArray<AActor*> GrippedActors;
+	LeftMotionController->GetGrippedActors(GrippedActors);
+	RightMotionController->GetGrippedActors(GrippedActors);
+	// Todo maybe want to calculate multiple movement speed modifiers.
+	float GunAimMovementModifier = 1.f; // 1.f no change
+	for (AActor* GrippedActor : GrippedActors)
+	{
+		AGunBase* Gun = Cast<AGunBase>(GrippedActor);
+		if (Gun)
+		{
+			GunAimMovementModifier = FMath::Min(Gun->CalculateMovementModifier(), GunAimMovementModifier);
+		}
+	}
+	return GunAimMovementModifier;
 }
 
 //////////////////////////////////////////////////////////////////////////
