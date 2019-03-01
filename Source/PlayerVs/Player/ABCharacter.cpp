@@ -76,6 +76,12 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer) : Super(
 	Health = 100.f;
 }
 
+void AABCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	OriginalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+}
+
 void AABCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
@@ -179,8 +185,15 @@ void AABCharacter::SetupTalker()
 void AABCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UpdateWidgetInteraction(WidgetInteractionLeft);
-	UpdateWidgetInteraction(WidgetInteractionRight);
+	if (IsLocallyControlled())
+	{
+		UpdateWidgetInteraction(WidgetInteractionLeft);
+		UpdateWidgetInteraction(WidgetInteractionRight);
+	}
+
+	if (IsLocallyControlled() || HasAuthority()) {
+		GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
+	}
 }
 
 void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetInteraction)
@@ -193,6 +206,24 @@ void AABCharacter::UpdateWidgetInteraction(UWidgetInteractionComponent* WidgetIn
 	{
 		WidgetInteraction->bShowDebug = false;
 	}
+}
+
+float AABCharacter::CalculateGunAimMovementModifier() const
+{
+	TArray<AActor*> GrippedActors;
+	LeftMotionController->GetGrippedActors(GrippedActors);
+	RightMotionController->GetGrippedActors(GrippedActors);
+	// Todo maybe want to calculate multiple movement speed modifiers.
+	float GunAimMovementModifier = 1.f; // 1.f no change
+	for (AActor* GrippedActor : GrippedActors)
+	{
+		AGunBase* Gun = Cast<AGunBase>(GrippedActor);
+		if (Gun)
+		{
+			GunAimMovementModifier = FMath::Min(Gun->CalculateMovementModifier(), GunAimMovementModifier);
+		}
+	}
+	return GunAimMovementModifier;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -296,7 +327,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	{
 		IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Result.Component);
 		IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Result.Actor);
-		UE_LOG(LogTemp, Warning, TEXT("GripResultScan %s"), *Result.Actor->GetName())
+		UE_LOG(LogTemp, Warning, TEXT("GripResultScan Actor %s"), (Result.Actor ? *Result.Actor->GetName() : *FString("NULL")))
 
 		if (GrippableComponent)
 		{
@@ -304,6 +335,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 			Result.ObjectTransform = Result.Component->GetComponentTransform();
 		}
 		else
+		if (Result.Actor)
 		{
 			Result.ObjectToGrip = Result.Actor;
 			Result.ObjectTransform = Result.Actor->GetActorTransform();
@@ -506,7 +538,7 @@ void AABCharacter::DropAll(EControllerHand EHand)
 		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
 		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
 
-		Hand->DropObject(GrippedActor, true);
+		Hand->DropObject(GrippedActor, 0, true);
 		if (bInventory)
 		{
 			PutInInventory(GrippedActor);
