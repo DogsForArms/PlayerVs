@@ -192,7 +192,6 @@ void AABCharacter::Tick(float DeltaTime)
 	}
 
 	if (IsLocallyControlled() || HasAuthority()) {
-		UE_LOG(LogTemp, Warning, TEXT("UPdate Char movement IsLocallControlled() %d HasAuthority() %d"), IsLocallyControlled(), HasAuthority())
 		GetCharacterMovement()->MaxWalkSpeed = OriginalWalkSpeed * CalculateGunAimMovementModifier();
 	}
 }
