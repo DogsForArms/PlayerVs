@@ -72,7 +72,6 @@ void AGunBase::OnUsed_Implementation()
 void AGunBase::OnEndUsed_Implementation()
 {
 	Super::OnEndUsed_Implementation();
-	UE_LOG(LogTemp, Warning, TEXT("Gun OnEndUsed_Implementation PEW PEW"))
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,7 +116,7 @@ void AGunBase::PlayGunEffects()
 	GunfireAudio->Play();
 }
 
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 // Calculates Is Aiming & Movement Modifications
 bool AGunBase::CalculateIsAimed() const
 {
