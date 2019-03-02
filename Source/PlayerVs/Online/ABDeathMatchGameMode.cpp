@@ -38,7 +38,7 @@ void AABDeathMatchGameMode::Killed(AController* Killer, AController* KilledPlaye
 	}
 
 
-	bool bGameShouldEnd = MaxKills > 0 && KillerPlayerState->GetNumKills() >= MaxKills;
+	bool bGameShouldEnd = KillerPlayerState && (MaxKills > 0 && KillerPlayerState->GetNumKills() >= MaxKills);
 	if (bGameShouldEnd)
 	{
 		FinishMatch();
