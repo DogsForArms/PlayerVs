@@ -8,7 +8,7 @@ public class PlayerVs : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "VRExpansionPlugin", "OnlineSubsystem", "OnlineSubsystemUtils" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "GameplayTags", "VRExpansionPlugin", "OnlineSubsystem", "OnlineSubsystemUtils", "Niagara" });
 
         DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 
