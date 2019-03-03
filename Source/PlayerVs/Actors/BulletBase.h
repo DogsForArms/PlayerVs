@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "NiagaraFunctionLibrary.h"
 #include "BulletBase.generated.h"
 
 class UProjectileMovementComponent;
 class USphereComponent;
 class UAudioComponent;
+class UNiagaraSystem;
 
 UCLASS()
 class PLAYERVS_API ABulletBase : public AActor
@@ -31,6 +33,12 @@ class PLAYERVS_API ABulletBase : public AActor
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* ImpactSound;
 
+	UPROPERTY(EditAnywhere, Category = "FX")
+	UNiagaraSystem* HitParticleSystem;
+
+	UPROPERTY(EditAnywhere, Category = "FX")
+	UNiagaraSystem* HitBloodParticleSystem;
+
 	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
 	int32 HitDamage;
 
@@ -45,6 +53,10 @@ public:
 	void InitializeBullet(float Velocity, AActor* Gun);
 
 protected:
+
+	UPROPERTY(Transient, Replicated)
+	bool bHitPlayer;
+
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_Exploded)
 	bool bExploded;
 
