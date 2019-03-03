@@ -55,6 +55,7 @@ ABulletBase::ABulletBase()
 void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ABulletBase, bHitPlayer);
 	DOREPLIFETIME(ABulletBase, bExploded);
 }
 
@@ -84,6 +85,7 @@ void ABulletBase::OnImpact(const FHitResult& Impact)
 {
 	if (Role == ROLE_Authority && !bExploded)
 	{
+		bHitPlayer = Cast<APawn>(Impact.GetActor()) != NULL;
 		bExploded = true;
 		OnRep_Exploded();
 
@@ -102,6 +104,14 @@ void ABulletBase::OnImpact(const FHitResult& Impact)
 void ABulletBase::OnRep_Exploded()
 {
 	MovementComp->StopMovementImmediately();
-	ImpactSound->Play();
 	SetLifeSpan(2.0f);
+
+	// Effects, don't play effects on server
+	ImpactSound->Play();
+
+	UNiagaraSystem* ParticleSystem = bHitPlayer ? HitBloodParticleSystem : HitParticleSystem;
+
+	if (ParticleSystem) {
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ParticleSystem, GetActorLocation(), FRotator::ZeroRotator, true);
+	}
 }

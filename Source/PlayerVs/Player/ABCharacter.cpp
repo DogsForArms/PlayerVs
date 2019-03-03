@@ -775,8 +775,7 @@ bool AABCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, ACo
 
 bool AABCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser) const
 {
-	if (bIsDying
-		|| Role != ROLE_Authority)
+	if (bIsDying || Role != ROLE_Authority)
 	{
 		return false;
 	}
@@ -786,6 +785,11 @@ bool AABCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, 
 void AABCharacter::OnRep_Health()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Health is %f"), Health)
+}
+
+void AABCharacter::FellOutOfWorld(const class UDamageType& dmgType)
+{
+	Die(Health, FDamageEvent(UDamageType::StaticClass()), NULL, NULL);
 }
 
 void AABCharacter::KilledBy(APawn* EventInstigator)

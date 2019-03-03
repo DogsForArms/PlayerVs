@@ -207,6 +207,8 @@ public:
 	/** Kill this pawn */
 	virtual void KilledBy(class APawn* EventInstigator);
 
+	virtual void FellOutOfWorld(const class UDamageType& dmgType);
+
 protected:
 	virtual void OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* InstigatingPawn, class AActor* DamageCauser);
 
