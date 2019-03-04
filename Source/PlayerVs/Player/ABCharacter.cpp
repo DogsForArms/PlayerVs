@@ -74,6 +74,7 @@ AABCharacter::AABCharacter(const FObjectInitializer& ObjectInitializer) : Super(
 	PrimaryActorTick.bCanEverTick = true;
 
 	Health = 100.f;
+	LastHealth = Health;
 }
 
 void AABCharacter::PostInitializeComponents()
@@ -737,6 +738,11 @@ float AABCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEv
 	Damage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 
 	Health -= Damage;
+	ENetMode NetMode = GetNetMode();
+	if (NetMode != ENetMode::NM_DedicatedServer) {
+		OnRep_Health();
+	}
+
 	if (Health <= 0)
 	{
 		Die(Damage, DamageEvent, EventInstigator, DamageCauser);
@@ -784,7 +790,8 @@ bool AABCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, 
 
 void AABCharacter::OnRep_Health()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Health is %f"), Health)
+	HealthChanged(LastHealth, Health);
+	LastHealth = Health;
 }
 
 void AABCharacter::FellOutOfWorld(const class UDamageType& dmgType)

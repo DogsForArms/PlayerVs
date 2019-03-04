@@ -181,7 +181,7 @@ public:
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_Health)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, ReplicatedUsing = OnRep_Health)
 	float Health;
 
 	/** Identifies if pawn is in its dying state */
@@ -190,6 +190,10 @@ public:
 
 	UFUNCTION()
 	void OnRep_Health();
+
+	float LastHealth;
+	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+	void HealthChanged(float from, float to);
 
 	/**
 	* Kills pawn.  Server/authority only.
