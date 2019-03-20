@@ -11,6 +11,7 @@ class UProjectileMovementComponent;
 class USphereComponent;
 class UAudioComponent;
 class UNiagaraSystem;
+class AImpactEffect;
 
 UCLASS()
 class PLAYERVS_API ABulletBase : public AActor
@@ -19,10 +20,6 @@ class PLAYERVS_API ABulletBase : public AActor
 
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const override;
-
-	/** handle hit */
-	UFUNCTION()
-	void OnImpact(const FHitResult& HitResult);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Projectile")
 	UProjectileMovementComponent* MovementComp;
@@ -30,14 +27,8 @@ class PLAYERVS_API ABulletBase : public AActor
 	UPROPERTY(VisibleDefaultsOnly, Category = "Projectile")
 	USphereComponent* CollisionComp;
 
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	UAudioComponent* ImpactSound;
-
-	UPROPERTY(EditAnywhere, Category = "FX")
-	UNiagaraSystem* HitParticleSystem;
-
-	UPROPERTY(EditAnywhere, Category = "FX")
-	UNiagaraSystem* HitBloodParticleSystem;
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	TSubclassOf<AImpactEffect> ImpactTemplate;
 
 	UPROPERTY(EditDefaultsOnly, Category = "WeaponStat")
 	int32 HitDamage;
@@ -53,14 +44,24 @@ public:
 	void InitializeBullet(float Velocity, AActor* Gun);
 
 protected:
+	//////////////////////////////////////////////////////////////////////////
+	// Death: Impact, Damage, Effects, Cleanup
 
-	UPROPERTY(Transient, Replicated)
-	bool bHitPlayer;
+	UFUNCTION()
+	void OnImpact(const FHitResult& HitResult);
+
+	UFUNCTION()
+	void ApplyDamage(const FHitResult& Impact);
+
+	UFUNCTION()
+	void PlayHitEffect(const FHitResult& Impact);
+
+	UFUNCTION()
+	void DisableAndDestroy();
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_Exploded)
 	bool bExploded;
 
-	/** [client] explosion happened */
 	UFUNCTION()
 	void OnRep_Exploded();
 

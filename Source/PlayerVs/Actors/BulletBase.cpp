@@ -8,6 +8,8 @@
 #include "Net/UnrealNetwork.h"
 #include "PlayerVs.h"
 #include "Player/ABCharacter.h"
+#include "Effects/ImpactEffect.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABulletBase::ABulletBase()
@@ -28,6 +30,7 @@ ABulletBase::ABulletBase()
 	CollisionComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
+	CollisionComp->bReturnMaterialOnMove = true;
 
 	RootComponent = CollisionComp;
 
@@ -37,10 +40,6 @@ ABulletBase::ABulletBase()
 	MovementComp->MaxSpeed = 2000.0f;
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->ProjectileGravityScale = 0.f;
-
-	ImpactSound = CreateDefaultSubobject<UAudioComponent>("ImpactComponent");
-	ImpactSound->bAutoActivate = false;
-	ImpactSound->SetupAttachment(CollisionComp);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PrePhysics;
@@ -55,7 +54,6 @@ ABulletBase::ABulletBase()
 void ABulletBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ABulletBase, bHitPlayer);
 	DOREPLIFETIME(ABulletBase, bExploded);
 }
 
@@ -81,37 +79,74 @@ void ABulletBase::PostInitializeComponents()
 	SetLifeSpan(10.0f);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Death: Impact, Damage, Effects, Cleanup
+
 void ABulletBase::OnImpact(const FHitResult& Impact)
 {
 	if (Role == ROLE_Authority && !bExploded)
 	{
-		bHitPlayer = Cast<APawn>(Impact.GetActor()) != NULL;
+		ApplyDamage(Impact);
+		PlayHitEffect(Impact);
+		DisableAndDestroy();
 		bExploded = true;
-		OnRep_Exploded();
+	}
+}
 
-		if (Impact.GetActor()) 
+void ABulletBase::ApplyDamage(const FHitResult& Impact)
+{
+	if (Impact.GetActor())
+	{
+		FPointDamageEvent PointDmg;
+		PointDmg.DamageTypeClass = DamageType;
+		PointDmg.HitInfo = Impact;
+		// PointDmg.ShotDirection = ShootDir;
+		PointDmg.Damage = HitDamage;
+		Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
+	}
+}
+
+void ABulletBase::PlayHitEffect(const FHitResult& Impact)
+{
+	if (GetNetMode() == ENetMode::NM_DedicatedServer) 
+		return;
+
+	if (ImpactTemplate)
+	{
+		const float NudgeConst = 2.0f;
+		const FVector NudgedImpactLocation = Impact.ImpactPoint + Impact.ImpactNormal * NudgeConst;
+
+		FTransform const SpawnTransform(Impact.ImpactNormal.Rotation(), NudgedImpactLocation);
+		AImpactEffect* const EffectActor = GetWorld()->SpawnActorDeferred<AImpactEffect>(ImpactTemplate, SpawnTransform);
+		if (EffectActor)
 		{
-			FPointDamageEvent PointDmg;
-			PointDmg.DamageTypeClass = DamageType;
-			PointDmg.HitInfo = Impact;
-			//PointDmg.ShotDirection = ShootDir;
-			PointDmg.Damage = HitDamage;
-			Impact.GetActor()->TakeDamage(PointDmg.Damage, PointDmg, GunOwner ? GunOwner->GetController() : NULL, this);
+			EffectActor->SurfaceHit = Impact;
+			UGameplayStatics::FinishSpawningActor(EffectActor, SpawnTransform);
 		}
 	}
 }
 
-void ABulletBase::OnRep_Exploded()
+void ABulletBase::DisableAndDestroy()
 {
 	MovementComp->StopMovementImmediately();
 	SetLifeSpan(2.0f);
+}
 
-	// Effects, don't play effects on server
-	ImpactSound->Play();
+void ABulletBase::OnRep_Exploded()
+{
+	// Scan ahead for likely impact, play effect.
+	FVector ProjDirection = GetActorForwardVector();
 
-	UNiagaraSystem* ParticleSystem = bHitPlayer ? HitBloodParticleSystem : HitParticleSystem;
+	const FVector StartTrace = GetActorLocation() - ProjDirection * 200;
+	const FVector EndTrace = GetActorLocation() + ProjDirection * 150;
+	FHitResult Impact;
 
-	if (ParticleSystem) {
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ParticleSystem, GetActorLocation(), FRotator::ZeroRotator, true);
+	if (!GetWorld()->LineTraceSingleByChannel(Impact, StartTrace, EndTrace, COLLISION_PROJECTILE, FCollisionQueryParams(SCENE_QUERY_STAT(ProjClient), true, Instigator)))
+	{
+		// failsafe
+		Impact.ImpactPoint = GetActorLocation();
+		Impact.ImpactNormal = -ProjDirection;
 	}
+
+	PlayHitEffect(Impact);
 }
