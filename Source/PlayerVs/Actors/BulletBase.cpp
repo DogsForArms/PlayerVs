@@ -30,6 +30,7 @@ ABulletBase::ABulletBase()
 	CollisionComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	CollisionComp->SetCollisionResponseToChannel(COLLISION_PROJECTILE, ECR_Ignore);
+	CollisionComp->bReturnMaterialOnMove = true;
 
 	RootComponent = CollisionComp;
 
@@ -112,7 +113,7 @@ void ABulletBase::PlayHitEffect(const FHitResult& Impact)
 
 	if (ImpactTemplate)
 	{
-		const float NudgeConst = 0.0f;
+		const float NudgeConst = 2.0f;
 		const FVector NudgedImpactLocation = Impact.ImpactPoint + Impact.ImpactNormal * NudgeConst;
 
 		FTransform const SpawnTransform(Impact.ImpactNormal.Rotation(), NudgedImpactLocation);

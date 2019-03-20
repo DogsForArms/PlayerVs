@@ -104,4 +104,7 @@ protected:
 
 	/** get sound for material type */
 	USoundCue* GetImpactSound(TEnumAsByte<EPhysicalSurface> SurfaceType) const;
+
+private:
+	void LogSurfaceType(TEnumAsByte<EPhysicalSurface> SurfaceType) const;
 };

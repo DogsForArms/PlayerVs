@@ -85,3 +85,23 @@ USoundCue* AImpactEffect::GetImpactSound(TEnumAsByte<EPhysicalSurface> SurfaceTy
 
 	return ImpactSound ? ImpactSound : DefaultSound;
 }
+
+void AImpactEffect::LogSurfaceType(TEnumAsByte<EPhysicalSurface> SurfaceType) const
+{
+
+	FString Str = FString("Default");
+
+	switch (SurfaceType)
+	{
+	case SHOOTER_SURFACE_Concrete:	Str = FString("Concrete"); break;
+	//case SHOOTER_SURFACE_Dirt:		Str = DirtSound; break;
+	//case SHOOTER_SURFACE_Water:		Str = WaterSound; break;
+	//case SHOOTER_SURFACE_Metal:		Str = MetalSound; break;
+	//case SHOOTER_SURFACE_Wood:		Str = WoodSound; break;
+	//case SHOOTER_SURFACE_Grass:		Str = GrassSound; break;
+	//case SHOOTER_SURFACE_Glass:		Str = GlassSound; break;
+	case SHOOTER_SURFACE_Flesh:		Str = FString("Flesh"); break;
+	}
+	auto Test = SurfaceType.GetValue();
+	UE_LOG(LogTemp, Warning, TEXT("HitXYZ LogSurfaceType -> %s"), *Str)
+}
