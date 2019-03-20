@@ -144,3 +144,32 @@ public:
 	void SetDamageEvent(const FDamageEvent& DamageEvent);
 	void EnsureReplication();
 };
+
+
+/* Keep in sync with ImpactEffect */
+UENUM()
+namespace EShooterPhysMaterialType
+{
+	enum Type
+	{
+		Unknown,
+		Concrete,
+		Dirt,
+		Water,
+		Metal,
+		Wood,
+		Grass,
+		Glass,
+		Flesh,
+	};
+}
+
+#define SHOOTER_SURFACE_Default		SurfaceType_Default
+#define SHOOTER_SURFACE_Concrete	SurfaceType1
+#define SHOOTER_SURFACE_Dirt		SurfaceType2
+#define SHOOTER_SURFACE_Water		SurfaceType3
+#define SHOOTER_SURFACE_Metal		SurfaceType4
+#define SHOOTER_SURFACE_Wood		SurfaceType5
+#define SHOOTER_SURFACE_Grass		SurfaceType6
+#define SHOOTER_SURFACE_Glass		SurfaceType7
+#define SHOOTER_SURFACE_Flesh		SurfaceType8
