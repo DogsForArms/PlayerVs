@@ -3,15 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Grippables/GrippableActor.h"
+#include "GrippableStaticMeshActor.h"
 #include "Magazine.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAYERVS_API AMagazine : public AGrippableActor
+class PLAYERVS_API AMagazine : public AGrippableStaticMeshActor
 {
 	GENERATED_BODY()
 	
+public:
+	AMagazine(const FObjectInitializer& ObjectInitializer);
 };
