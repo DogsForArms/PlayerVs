@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GrippableStaticMeshActor.h"
+#include "Types/Types.h"
 #include "Magazine.generated.h"
 
 /**
  * 
  */
+class USphereComponent;
+
 UCLASS()
 class PLAYERVS_API AMagazine : public AGrippableStaticMeshActor
 {
@@ -16,4 +19,12 @@ class PLAYERVS_API AMagazine : public AGrippableStaticMeshActor
 	
 public:
 	AMagazine(const FObjectInitializer& ObjectInitializer);
+
+
+	EMagazineType GetAttachmentType() const;
+
+	//UPROPERTY(VisibleDefaultsOnly)
+	//USphereComponent* AttachmentPoint;
+
+
 };

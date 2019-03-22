@@ -12,6 +12,7 @@ class UGripMotionControllerComponent;
 class ABulletBase;
 class UArrowComponent;
 class UAudioComponent;
+class USphereComponent;
 
 UCLASS()
 class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
@@ -43,6 +44,13 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* GunfireAudio;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = Attachment)
+	USphereComponent* AttachmentPoint;
+
+	UFUNCTION()
+	void OnBeginOverlapMagazine(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 
 //////////////////////////////////////////////////////////////////////////
 // Calculates Is Aiming & Movement Modifications

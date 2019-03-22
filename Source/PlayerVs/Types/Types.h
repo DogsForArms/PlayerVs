@@ -173,3 +173,9 @@ namespace EShooterPhysMaterialType
 #define SHOOTER_SURFACE_Grass		SurfaceType6
 #define SHOOTER_SURFACE_Glass		SurfaceType7
 #define SHOOTER_SURFACE_Flesh		SurfaceType8
+
+UENUM(BlueprintType)
+enum class EMagazineType : uint8
+{
+	Pistol
+};

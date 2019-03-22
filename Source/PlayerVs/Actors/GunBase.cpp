@@ -6,9 +6,11 @@
 #include "Actors/BulletBase.h"
 #include "Components/ArrowComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "PlayerVs.h"
+#include "Actors/Magazine.h"
 //////////////////////////////////////////////////////////////////////////
 // Initialization
 
@@ -36,10 +38,50 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	Mesh->SetCollisionObjectType(ECollisionChannel::ECC_PhysicsBody);
 	Mesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
 	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	Mesh->SetNotifyRigidBodyCollision(true);
 	Mesh->SetGenerateOverlapEvents(true);
 	Mesh->bMultiBodyOverlap = true;
+
+	///////////////////
+	// AttachmentPoint Setup
+	AttachmentPoint = CreateDefaultSubobject<USphereComponent>("AttachmentPoint");
+	AttachmentPoint->InitSphereRadius(2.5f);
+	AttachmentPoint->AlwaysLoadOnClient = false;
+	AttachmentPoint->AlwaysLoadOnServer = true;
+
+	AttachmentPoint->SetCollisionObjectType(COLLISION_ATTACHMENT);
+	AttachmentPoint->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	AttachmentPoint->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AttachmentPoint->SetCollisionResponseToChannel(COLLISION_ATTACHMENT, ECollisionResponse::ECR_Overlap);
+
+	AttachmentPoint->SetGenerateOverlapEvents(true);
+	AttachmentPoint->bMultiBodyOverlap = true;
+	AttachmentPoint->OnComponentBeginOverlap.AddDynamic(this, &AGunBase::OnBeginOverlapMagazine);
+
+	AttachmentPoint->SetupAttachment(RootComponent);
+}
+
+void AGunBase::OnBeginOverlapMagazine(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	AMagazine* Magazine = Cast<AMagazine>(OtherActor);
+	UE_LOG(LogTemp, Warning, TEXT("xyz otherActor is %s"), (OtherActor ? *OtherActor->GetName() : TEXT("NULL")))
+	if (Magazine) 
+	{
+		// Do it
+		UE_LOG(LogTemp, Warning, TEXT("xyz Magazine is in gun! '%s'"), *OtherActor->GetName() )
+		if (Magazine->GetAttachmentType() == EMagazineType::Pistol)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("xyz YES!"))
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
