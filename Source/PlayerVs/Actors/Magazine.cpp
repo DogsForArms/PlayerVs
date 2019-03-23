@@ -9,16 +9,6 @@ AMagazine::AMagazine(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	//AttachmentPoint = CreateDefaultSubobject<USphereComponent>("AttachmentPoint");
-	//AttachmentPoint->InitSphereRadius(2.0f);
-	//AttachmentPoint->AlwaysLoadOnClient = true;
-	//AttachmentPoint->AlwaysLoadOnServer = true;
-	//AttachmentPoint->bTraceComplexOnMove = true;
-	//AttachmentPoint->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//AttachmentPoint->SetCollisionObjectType(COLLISION_ATTACHMENT);
-	//AttachmentPoint->SetCollisionResponseToAllChannels(ECR_Overlap);
-//	AttachmentPoint->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-
 	bAlwaysRelevant = true;
 	VRGripInterfaceSettings.MovementReplicationType = EGripMovementReplicationSettings::ForceClientSideMovement;
 	VRGripInterfaceSettings.AdvancedGripSettings.bSetOwnerOnGrip = true;

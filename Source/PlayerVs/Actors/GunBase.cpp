@@ -51,7 +51,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	AttachmentPoint->AlwaysLoadOnClient = false;
 	AttachmentPoint->AlwaysLoadOnServer = true;
 
-	AttachmentPoint->SetCollisionObjectType(COLLISION_ATTACHMENT);
+	AttachmentPoint->SetCollisionObjectType(ECC_WorldDynamic);
 	AttachmentPoint->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	AttachmentPoint->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	AttachmentPoint->SetCollisionResponseToChannel(COLLISION_ATTACHMENT, ECollisionResponse::ECR_Overlap);
@@ -72,16 +72,19 @@ void AGunBase::OnBeginOverlapMagazine(
 	const FHitResult& SweepResult)
 {
 	AMagazine* Magazine = Cast<AMagazine>(OtherActor);
-	UE_LOG(LogTemp, Warning, TEXT("xyz otherActor is %s"), (OtherActor ? *OtherActor->GetName() : TEXT("NULL")))
-	if (Magazine) 
-	{
-		// Do it
-		UE_LOG(LogTemp, Warning, TEXT("xyz Magazine is in gun! '%s'"), *OtherActor->GetName() )
-		if (Magazine->GetAttachmentType() == EMagazineType::Pistol)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("xyz YES!"))
-		}
-	}
+//	UE_LOG(LogTemp, Warning, TEXT("xyz otherActor is %s"), (OtherActor ? *OtherActor->GetName() : TEXT("NULL")))
+	if (!Magazine || Magazine->GetAttachmentType() != EMagazineType::Pistol)
+		return;
+
+	if (Role != ROLE_Authority)
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Test!"))
+	// if it's being held, drop it
+
+	// if it's simulating stop simulating physics
+
+	// if it's 
 }
 
 //////////////////////////////////////////////////////////////////////////

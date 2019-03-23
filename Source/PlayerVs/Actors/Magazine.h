@@ -23,8 +23,5 @@ public:
 
 	EMagazineType GetAttachmentType() const;
 
-	//UPROPERTY(VisibleDefaultsOnly)
-	//USphereComponent* AttachmentPoint;
-
 
 };
