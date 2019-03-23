@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GrippableStaticMeshActor.h"
 #include "Types/Types.h"
+#include "VR/PVGrippableStaticMeshActor.h"
 #include "Magazine.generated.h"
 
 /**
@@ -13,7 +13,7 @@
 class USphereComponent;
 
 UCLASS()
-class PLAYERVS_API AMagazine : public AGrippableStaticMeshActor
+class PLAYERVS_API AMagazine : public APVGrippableStaticMeshActor
 {
 	GENERATED_BODY()
 	
