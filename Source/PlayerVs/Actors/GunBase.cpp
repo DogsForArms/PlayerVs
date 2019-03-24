@@ -231,6 +231,7 @@ void AGunBase::AttachActorToWeapon(AActor* Actor, const FVector& Location, const
 	Actor->SetActorRelativeRotation(Rotation);
 
 	// perhaps only server worries about this
+
 	Attachment->OnAttachmentFreed.AddDynamic(this, &AGunBase::AttachmentFreedHandler);
 //	GetWorld()->GetTimerManager().SetTimer(CountdownTimerHandle, this, &AGunBase::DebugTimer, 10.0f, false);
 }
@@ -254,4 +255,10 @@ void AGunBase::AttachmentFreedHandler(AActor* Attachment)
 				true),
 			true)
 		);
+
+	IAttachmentInterface* Interface = Cast<IAttachmentInterface>(Attachment);
+	if (Interface)
+	{
+		Interface->OnAttachmentFreed.RemoveDynamic(this, &AGunBase::AttachmentFreedHandler);
+	}
 }

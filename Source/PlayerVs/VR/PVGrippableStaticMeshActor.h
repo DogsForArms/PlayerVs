@@ -23,8 +23,6 @@ public:
 	bool IsGripped();
 	void Drop();
 
-	void FreeAttachmentClearAll();
-
 private:
 	TWeakObjectPtr<UGripMotionControllerComponent> MotionController;
 };

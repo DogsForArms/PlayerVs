@@ -471,7 +471,6 @@ void AABCharacter::CallCorrectGrabEvent(EControllerHand EHand, UObject* ObjectTo
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Server Try Grab:: TODO untested"));
 		ServerTryGrab(EHand, ObjectToGrip, Transform, BoneName, bIsSlotGrip);
 	}
 }
@@ -481,7 +480,7 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 	UGripMotionControllerComponent* OtherHand = Hand == LeftMotionController ? RightMotionController : LeftMotionController;
 
-	// Temporary!  Before grab let's see if it's attached to something already.
+	// TODO Temporary!  Before grab let's see if it's attached to something already.
 	IAttachmentInterface* Attachment = Cast<IAttachmentInterface>(ObjectToGrip);
 	if (Attachment)
 	{
