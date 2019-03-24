@@ -4,13 +4,17 @@
 #include "GripMotionControllerComponent.h"
 //#include "GameplayTagsManager.h"
 #include "Actors/BulletBase.h"
+#include "Components/SceneComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerVs.h"
 #include "Actors/Magazine.h"
+#include "Net/UnrealNetwork.h"
+#include "VR/AttachmentInterface.h"
 //////////////////////////////////////////////////////////////////////////
 // Initialization
 
@@ -47,7 +51,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	///////////////////
 	// AttachmentPoint Setup
 	AttachmentPoint = CreateDefaultSubobject<USphereComponent>("AttachmentPoint");
-	AttachmentPoint->InitSphereRadius(2.5f);
+	AttachmentPoint->InitSphereRadius(1.0f);
 	AttachmentPoint->AlwaysLoadOnClient = false;
 	AttachmentPoint->AlwaysLoadOnServer = true;
 
@@ -63,6 +67,13 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	AttachmentPoint->SetupAttachment(RootComponent);
 }
 
+
+void AGunBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGunBase, LoadedMagazine);
+}
+
 void AGunBase::OnBeginOverlapMagazine(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,
@@ -72,19 +83,21 @@ void AGunBase::OnBeginOverlapMagazine(
 	const FHitResult& SweepResult)
 {
 	AMagazine* Magazine = Cast<AMagazine>(OtherActor);
-//	UE_LOG(LogTemp, Warning, TEXT("xyz otherActor is %s"), (OtherActor ? *OtherActor->GetName() : TEXT("NULL")))
-	if (!Magazine || Magazine->GetAttachmentType() != EMagazineType::Pistol)
+	if ((!Magazine || Magazine->GetAttachmentType() != EMagazineType::Pistol) ||
+		(Role != ROLE_Authority) ||
+		(LoadedMagazine)) //temporary, only allow loaded magazine
 		return;
 
-	if (Role != ROLE_Authority)
-		return;
-
-	UE_LOG(LogTemp, Warning, TEXT("Test!"))
 	// if it's being held, drop it
+	if (Magazine->IsGripped())
+	{
+		Magazine->Drop();
+	}
 
-	// if it's simulating stop simulating physics
-
-	// if it's 
+	// if stop simulating physics
+	AMagazine* LastMagazine = LoadedMagazine;
+	LoadedMagazine = Magazine;
+	OnRep_LoadedMagazine(LastMagazine);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -178,4 +191,67 @@ bool AGunBase::CalculateIsAimed() const
 float AGunBase::CalculateMovementModifier() const
 {
 	return CalculateIsAimed() ? AimMovementModifier : 1.f;
+}
+
+void AGunBase::OnRep_LoadedMagazine(AMagazine* LastMagazine)
+{
+	if (LoadedMagazine && !LastMagazine)
+	{
+		AttachActorToWeapon(LoadedMagazine, FVector::ZeroVector, FRotator::ZeroRotator);
+	}
+	//TODO remove LastMagazine if not null
+}
+
+///////////////////////////1///////////////////////////////////////////////
+// Attachment Helper
+void AGunBase::AttachActorToWeapon(AActor* Actor, const FVector& Location, const FRotator& Rotation)
+{
+	IAttachmentInterface* Attachment = Cast<IAttachmentInterface>(Actor);
+	if (!Actor || !Attachment) return;
+
+	//Actor->SetActorEnableCollision(false);
+	UPrimitiveComponent* OtherRoot = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+	UPrimitiveComponent* MyRoot = Cast<UPrimitiveComponent>(GetRootComponent());
+
+	
+	if (OtherRoot) {
+		OtherRoot->MoveIgnoreActors.Add(this);
+	}
+
+	if (MyRoot) {
+		MyRoot->MoveIgnoreActors.Add(Actor);
+	}
+	
+	//UPrimitiveComponent* Root = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+	//Actor->DisableComponentsSimulatePhysics();
+	////Root->SetSimulatePhysics(false);
+	FAttachmentTransformRules rules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+	Actor->AttachToActor(this, rules);
+	Actor->SetActorRelativeLocation(Location);
+	Actor->SetActorRelativeRotation(Rotation);
+
+	// perhaps only server worries about this
+	Attachment->OnAttachmentFreed.AddDynamic(this, &AGunBase::AttachmentFreedHandler);
+//	GetWorld()->GetTimerManager().SetTimer(CountdownTimerHandle, this, &AGunBase::DebugTimer, 10.0f, false);
+}
+
+void AGunBase::DebugTimer()
+{
+	AttachmentFreedHandler(LoadedMagazine);
+}
+
+void AGunBase::AttachmentFreedHandler(AActor* Attachment)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Ethan AttachmentFreedHandler %s"), *GetName())
+	UPrimitiveComponent* Root = Cast<UPrimitiveComponent>(Attachment->GetRootComponent());
+	Root->SetSimulatePhysics(true);
+	Attachment->DetachFromActor(
+		FDetachmentTransformRules(
+			FAttachmentTransformRules(
+				EAttachmentRule::KeepWorld,
+				EAttachmentRule::KeepWorld,
+				EAttachmentRule::KeepWorld,
+				true),
+			true)
+		);
 }

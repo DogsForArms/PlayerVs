@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Grippables/GrippableStaticMeshActor.h"
+#include "VR/AttachmentInterface.h"
 #include "PVGrippableStaticMeshActor.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAYERVS_API APVGrippableStaticMeshActor : public AGrippableStaticMeshActor
+class PLAYERVS_API APVGrippableStaticMeshActor : public AGrippableStaticMeshActor, public IAttachmentInterface
 {
 	GENERATED_BODY()
 
@@ -22,7 +23,8 @@ public:
 	bool IsGripped();
 	void Drop();
 
+	void FreeAttachmentClearAll();
+
 private:
 	TWeakObjectPtr<UGripMotionControllerComponent> MotionController;
-	
 };

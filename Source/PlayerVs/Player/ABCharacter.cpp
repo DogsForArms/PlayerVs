@@ -15,6 +15,9 @@
 #include "PlayerVs.h"
 #include "Net/UnrealNetwork.h"
 #include "Online/ABGameMode.h"
+#include "Actors/Magazine.h"
+
+#include "VR/AttachmentInterface.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization
@@ -343,6 +346,21 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 		}
 	}
 
+	// Grab Order between Actors
+	OutResults.Sort([](const FGrabScanResult & A, const FGrabScanResult & B) {
+		return A.Actor&& A.Actor->IsA(AMagazine::StaticClass());
+	});
+
+	// TODO remove duplicates?
+
+	////debug post sort
+	//i = 0;
+	//for (FGrabScanResult& Result : OutResults)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("xyz SORTED GrabScanRes[%i] == %s"), i, (Result.ObjectToGrip ? *Result.ObjectToGrip->GetName() : TEXT("NULL")))
+	//		i++;
+	//}
+
 	bool bHasResults = OutResults.Num() > 0;
 	return bHasResults;
 }
@@ -463,6 +481,13 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 	UGripMotionControllerComponent* Hand = GetHandReference(EHand);
 	UGripMotionControllerComponent* OtherHand = Hand == LeftMotionController ? RightMotionController : LeftMotionController;
 
+	// Temporary!  Before grab let's see if it's attached to something already.
+	IAttachmentInterface* Attachment = Cast<IAttachmentInterface>(ObjectToGrip);
+	if (Attachment)
+	{
+		Attachment->OnAttachmentFreed.Broadcast(Cast<AActor>(ObjectToGrip));
+	}
+
 	TArray<UObject*> OtherHandHolding;
 	OtherHand->GetGrippedObjects(OtherHandHolding);
 	if (OtherHandHolding.Contains(ObjectToGrip))
@@ -535,7 +560,7 @@ void AABCharacter::DropAll(EControllerHand EHand)
 	TArray<AActor*> GrippedActors;
 	Hand->GetGrippedActors(GrippedActors);
 	for (AActor *GrippedActor : GrippedActors)
-	{
+	{ 
 		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
 		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
 

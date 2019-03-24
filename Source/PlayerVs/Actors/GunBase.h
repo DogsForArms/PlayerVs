@@ -13,6 +13,7 @@ class ABulletBase;
 class UArrowComponent;
 class UAudioComponent;
 class USphereComponent;
+class AMagazine;
 
 UCLASS()
 class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
@@ -21,6 +22,8 @@ class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
 
 public:
 	AGunBase(const FObjectInitializer& ObjectInitializer);
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 	virtual void OnGrip_Implementation(UGripMotionControllerComponent * GrippingController, const FBPActorGripInformation & GripInformation) override;
 	virtual void OnGripRelease_Implementation(UGripMotionControllerComponent * ReleasingController, const FBPActorGripInformation & GripInformation, bool bWasSocketed = false) override;
@@ -85,5 +88,22 @@ public:
 	void PlayGunEffects();
 
 private:
+	void AttachActorToWeapon(AActor* Actor, const FVector& Location = FVector::ZeroVector, const FRotator& Rotation = FRotator::ZeroRotator);
 
+protected:
+
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_LoadedMagazine)
+	AMagazine* LoadedMagazine;
+
+	UFUNCTION()
+	void OnRep_LoadedMagazine(AMagazine* LastMagazine);
+
+public:
+
+	UFUNCTION()
+	void AttachmentFreedHandler(AActor* Attachment);
+
+	FTimerHandle CountdownTimerHandle;
+
+	void DebugTimer();
 };
