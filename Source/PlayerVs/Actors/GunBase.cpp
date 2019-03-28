@@ -232,7 +232,8 @@ void AGunBase::AttachActorToWeapon(AActor* Actor, const FVector& Location, const
 
 	// perhaps only server worries about this
 
-	Attachment->OnAttachmentFreed.AddDynamic(this, &AGunBase::AttachmentFreedHandler);
+	//Attachment->AddOne();
+//	Attachment->OnAttachmentFreed.AddDynamic(this, &AGunBase::AttachmentFreedHandler);
 //	GetWorld()->GetTimerManager().SetTimer(CountdownTimerHandle, this, &AGunBase::DebugTimer, 10.0f, false);
 }
 
@@ -259,6 +260,6 @@ void AGunBase::AttachmentFreedHandler(AActor* Attachment)
 	IAttachmentInterface* Interface = Cast<IAttachmentInterface>(Attachment);
 	if (Interface)
 	{
-		Interface->OnAttachmentFreed.RemoveDynamic(this, &AGunBase::AttachmentFreedHandler);
+//		Interface->OnAttachmentFreed.RemoveDynamic(this, &AGunBase::AttachmentFreedHandler);
 	}
 }

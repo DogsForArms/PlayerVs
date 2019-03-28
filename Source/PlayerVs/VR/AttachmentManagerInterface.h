@@ -7,28 +7,25 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/ScriptMacros.h"
 #include "UObject/Interface.h"
-#include "VR/AttachmentManagerInterface.h"
 
-#include "AttachmentInterface.generated.h"
+#include "AttachmentManagerInterface.generated.h"
+
+class UObject;
 
 UINTERFACE(Blueprintable)
-class PLAYERVS_API UAttachmentInterface : public UInterface
+class PLAYERVS_API UAttachmentManagerInterface : public UInterface
 {
 	GENERATED_UINTERFACE_BODY()
 };
 
-class PLAYERVS_API IAttachmentInterface
+class PLAYERVS_API IAttachmentManagerInterface
 {
 	GENERATED_IINTERFACE_BODY()
 
 public:
-
-	/* 
-		Ask previous attachment manager to release.
-		Ask current attachment manager to attach
-	*/
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
-	void SetAttachmentManager(const TScriptInterface< IAttachmentManagerInterface>& Manager);
-
+	void Attach(UObject* Attachment);
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
+	void Detach(UObject* Attachment);
 
 };

@@ -484,7 +484,7 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 	IAttachmentInterface* Attachment = Cast<IAttachmentInterface>(ObjectToGrip);
 	if (Attachment)
 	{
-		Attachment->OnAttachmentFreed.Broadcast(Cast<AActor>(ObjectToGrip));
+		Attachment->Execute_SetAttachmentManager(ObjectToGrip, NULL);
 	}
 
 	TArray<UObject*> OtherHandHolding;
