@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GrippableStaticMeshActor.h"
+#include "VR/AttachmentManagerInterface.h"
 #include "GunBase.generated.h"
 
 class AGrippableStaticMeshActor;
@@ -16,7 +17,7 @@ class USphereComponent;
 class AMagazine;
 
 UCLASS()
-class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor
+class PLAYERVS_API AGunBase : public AGrippableStaticMeshActor, public IAttachmentManagerInterface
 {
 	GENERATED_BODY()
 
@@ -87,9 +88,6 @@ public:
 
 	void PlayGunEffects();
 
-private:
-	void AttachActorToWeapon(AActor* Actor, const FVector& Location = FVector::ZeroVector, const FRotator& Rotation = FRotator::ZeroRotator);
-
 protected:
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_LoadedMagazine)
@@ -98,12 +96,22 @@ protected:
 	UFUNCTION()
 	void OnRep_LoadedMagazine(AMagazine* LastMagazine);
 
+//////////////////////////////////////////////////////////////////////////
+// Attachment Manager Interface
 public:
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
+	void Attach(UObject* Attachment);
+	virtual void Attach_Implementation(UObject* Attachment) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
+	void Detach(UObject* Attachment);
+	virtual void Detach_Implementation(UObject* Attachment) override;
+
+	FTimerHandle DebugMagTimer;
+
+	int DebugMagTimerIterations;
 
 	UFUNCTION()
-	void AttachmentFreedHandler(AActor* Attachment);
+	void DebugMagTimerHandle();
 
-	FTimerHandle CountdownTimerHandle;
-
-	void DebugTimer();
 };

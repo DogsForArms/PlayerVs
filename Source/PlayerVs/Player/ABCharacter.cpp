@@ -294,7 +294,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	float Radius = GrabArea->GetScaledSphereRadius();
 	FVector Start = GrabArea->GetComponentLocation();
 	FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
-	DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
+	//DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
 	bool ObjectFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
 	UE_LOG(LogTemp, Warning, TEXT("SweepMultiByObjectType %d"), ObjectFound)
 

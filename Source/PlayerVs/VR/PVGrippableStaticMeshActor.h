@@ -19,7 +19,6 @@ public:
 	void OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketed) override;
 
 	bool IsGripped();
-	void Drop();
 
 //////////////////////////////////////////////////////////////////////////
 // AttachmentInterface Management
@@ -28,12 +27,19 @@ public:
 	void SetAttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& Manager);
 	virtual void SetAttachmentManager_Implementation(const TScriptInterface<IAttachmentManagerInterface>& Manager) override;
 
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_AttachmentManager)
-	TScriptInterface<IAttachmentManagerInterface> AttachmentManager;
-
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_AttachmentManagerObject)
+	UObject* AttachmentManagerObject;
 	UFUNCTION()
-	void OnRep_AttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& LastManager);
+	void OnRep_AttachmentManagerObject(UObject* LastManager);
+
+	//UPROPERTY(Transient, ReplicatedUsing = OnRep_AttachmentManager)
+	//TScriptInterface<IAttachmentManagerInterface> AttachmentManager;
+
+	//UFUNCTION()
+	//void OnRep_AttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& LastManager);
 
 private:
 	TWeakObjectPtr<UGripMotionControllerComponent> MotionController;
+
+	void AttachmentChanged(UObject* Last, UObject* Current);
 };
