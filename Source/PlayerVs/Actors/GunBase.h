@@ -88,13 +88,11 @@ public:
 
 	void PlayGunEffects();
 
+	void OnRep_AttachmentReplication() override;
+
 protected:
 
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_LoadedMagazine)
 	AMagazine* LoadedMagazine;
-
-	UFUNCTION()
-	void OnRep_LoadedMagazine(AMagazine* LastMagazine);
 
 //////////////////////////////////////////////////////////////////////////
 // Attachment Manager Interface
@@ -108,6 +106,11 @@ public:
 	virtual void Detach_Implementation(UObject* Attachment) override;
 
 	FTimerHandle DebugMagTimer;
+
+	FTimerHandle DeferredAttachment;
+	UObject* DeferredAttachmentObject;
+	UFUNCTION()
+	void DeferredAttachmentHandle();
 
 	int DebugMagTimerIterations;
 

@@ -15,6 +15,7 @@
 #include "Actors/Magazine.h"
 #include "Net/UnrealNetwork.h"
 #include "VR/AttachmentInterface.h"
+#include "Debug.h"
 //////////////////////////////////////////////////////////////////////////
 // Initialization
 
@@ -51,7 +52,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	///////////////////
 	// AttachmentPoint Setup
 	AttachmentPoint = CreateDefaultSubobject<USphereComponent>("AttachmentPoint");
-	AttachmentPoint->InitSphereRadius(1.0f);
+	AttachmentPoint->InitSphereRadius(2.5f); //1
 	AttachmentPoint->AlwaysLoadOnClient = false;
 	AttachmentPoint->AlwaysLoadOnServer = true;
 
@@ -71,7 +72,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 void AGunBase::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AGunBase, LoadedMagazine);
+	//DOREPLIFETIME(AGunBase, LoadedMagazine);
 }
 
 void AGunBase::OnBeginOverlapMagazine(
@@ -88,17 +89,6 @@ void AGunBase::OnBeginOverlapMagazine(
 		(Role != ROLE_Authority) ||
 		(LoadedMagazine)) //temporary, only allow loaded magazine
 		return;
-
-	// if it's being held, drop it
-	//if (Magazine->IsGripped())
-	//{
-	//	Magazine->Drop();
-	//}
-
-	// if stop simulating physics
-	AMagazine* LastMagazine = LoadedMagazine;
-	LoadedMagazine = Magazine;
-	OnRep_LoadedMagazine(LastMagazine);
 
 	MagAttachment->Execute_SetAttachmentManager(MagAttachment.GetObject(), this);
 }
@@ -196,86 +186,85 @@ float AGunBase::CalculateMovementModifier() const
 	return CalculateIsAimed() ? AimMovementModifier : 1.f;
 }
 
-void AGunBase::OnRep_LoadedMagazine(AMagazine* LastMagazine)
-{
-	if (LoadedMagazine && !LastMagazine)
-	{
-		//AttachActorToWeapon(LoadedMagazine, FVector::ZeroVector, FRotator::ZeroRotator);
-	}
-	//TODO remove LastMagazine if not null
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Attachment Manager Interface
-void AGunBase::Attach_Implementation(UObject* ActorMaybe)
+
+void AGunBase::DeferredAttachmentHandle()
 {
-	AActor* Actor = Cast<AActor>(ActorMaybe);
+	AActor* Actor = Cast<AActor>(DeferredAttachmentObject);
 	if (!Actor) return;
 
 	UPrimitiveComponent* OtherRoot = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
 	UPrimitiveComponent* MyRoot = Cast<UPrimitiveComponent>(GetRootComponent());
 
-	if (OtherRoot) {
-		OtherRoot->MoveIgnoreActors.Add(this);
-	}
-
 	if (MyRoot) {
 		MyRoot->MoveIgnoreActors.Add(Actor);
 	}
 
-//	Actor->SetReplicates(false);
-	Actor->SetReplicateMovement(false);
-	AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
-	if (Grippable) {
-		Grippable->bReplicateMovement = false;
-		Grippable->bStaticMeshReplicateMovement = false;
-	}
-	OtherRoot->SetSimulatePhysics(false);
-	
-	Actor->AttachToActor(this, 
+	//Actor->SetReplicates(false);
+	//Actor->SetReplicateMovement(false);
+	//AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
+	//if (Grippable) {
+	//	Grippable->bReplicateMovement = false;
+	//	Grippable->bStaticMeshReplicateMovement = false;
+	//}
+
+
+	OtherRoot->AttachToComponent(MyRoot,
 		FAttachmentTransformRules(
 			EAttachmentRule::KeepWorld,
-			EAttachmentRule::KeepWorld, 
+			EAttachmentRule::KeepWorld,
 			EAttachmentRule::KeepWorld,
 			true)
 	);
-	Actor->SetActorRelativeTransform(FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector), false, 0, ETeleportType::TeleportPhysics);
+	Actor->SetActorRelativeTransform(FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector), false, 0, ETeleportType::ResetPhysics);
 
-	FName NM = FName("none");
-	switch (GetNetMode())
+	if (AMagazine * Mag = Cast<AMagazine>(Actor))
 	{
-	case ENetMode::NM_Client: NM = FName("NM_Client"); break;
-	case ENetMode::NM_DedicatedServer: NM = FName("NM_DedicatedServer"); break;
+		LoadedMagazine = Mag;
 	}
 
-	//FVector Delta = LoadedMagazine->GetActorLocation() - GetActorLocation();
-	DebugMagTimerIterations = 10;
+	DebugMagTimerIterations = 3;
 	DebugMagTimerHandle();
 	GetWorld()->GetTimerManager().SetTimer(DebugMagTimer, this, &AGunBase::DebugMagTimerHandle, 0.01f, true);
 }
 
+void AGunBase::Attach_Implementation(UObject* ActorMaybe)
+{
+	DeferredAttachmentObject = ActorMaybe;
+	DeferredAttachmentHandle();
+	//GetWorld()->GetTimerManager().SetTimer(DeferredAttachment, this, &AGunBase::DeferredAttachmentHandle, 1.0f, false);
+}
+
 void AGunBase::DebugMagTimerHandle()
 {
-	DebugMagTimerIterations--;
-	FName NM = FName("none");
-	switch (GetNetMode())
-	{
-	case ENetMode::NM_Client: NM = FName("NM_Client"); break;
-	case ENetMode::NM_DedicatedServer: NM = FName("NM_DedicatedServer"); break;
-	}
+	UE_LOG(LogTemp, Warning, TEXT("========== %s"), *UDebug::GetNetModeName(GetNetMode()));
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *UDebug::ActorNetRole(this));
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *UDebug::ActorNetRole(LoadedMagazine));
+
+	UPrimitiveComponent* PrimitiveMag = Cast<UPrimitiveComponent>(LoadedMagazine ? LoadedMagazine->GetRootComponent() : NULL);
+	FString MagIsSimulating = PrimitiveMag ? UDebug::BoolToString(PrimitiveMag->IsSimulatingPhysics()) : FString("NULL");
+	UE_LOG(LogTemp, Warning, TEXT("%s simulatephysics %s"), *UDebug::NameOrNull(LoadedMagazine), *MagIsSimulating)
+
+	//UE_LOG(LogTemp, Warning, TEXT("%s net owner is "), *UDebug::NameOrNull(this), *UDebug::NameOrNull(this->GetNetOwner()));
+	//UE_LOG(LogTemp, Warning, TEXT("%s net owner is %s"), *UDebug::NameOrNull(LoadedMagazine), *UDebug::NameOrNull(LoadedMagazine->GetNetOwner()));
 	FVector Delta = (LoadedMagazine ? LoadedMagazine->GetActorLocation() : GetActorLocation()) - GetActorLocation();
-	UE_LOG(LogTemp, Warning, TEXT("xyz DebugMagTimerHandle[%s] %s - %s = %s"), 
-		*NM.ToString(), 
-		LoadedMagazine ? *LoadedMagazine->GetName() : TEXT("NULL"), 
-		*GetName(), 
-		*(Delta).ToString())
-	GetWorld()->GetTimerManager().ClearTimer(DebugMagTimer);
+	UE_LOG(LogTemp, Warning, TEXT("Vector Offset %s"), *Delta.ToString());
+	UE_LOG(LogTemp, Warning, TEXT("=========="));
+
+	DebugMagTimerIterations--;
+	if (DebugMagTimerIterations <= 0) {
+		GetWorld()->GetTimerManager().ClearTimer(DebugMagTimer);
+	}
 }
 
 void AGunBase::Detach_Implementation(UObject* ActorMaybe)
 {
 	AActor* Actor = Cast<AActor>(ActorMaybe);
 	if (!Actor) return;
+
+	UPrimitiveComponent* OtherRoot = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+	UPrimitiveComponent* MyRoot = Cast<UPrimitiveComponent>(GetRootComponent());
 
 	Actor->DetachFromActor(
 		FDetachmentTransformRules(
@@ -287,24 +276,24 @@ void AGunBase::Detach_Implementation(UObject* ActorMaybe)
 			true)
 	);
 
-	UPrimitiveComponent* OtherRoot = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
-
-	Actor->SetReplicateMovement(true);
-	AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
-	if (Grippable) {
-		Grippable->bReplicateMovement = true;
-		//Grippable->bStaticMeshReplicateMovement = true;
-	}
-	OtherRoot->SetSimulatePhysics(true);
-	OtherRoot->SetEnableGravity(true);
-
-	FName NM = FName("none");
-	switch (GetNetMode())
-	{
-	case ENetMode::NM_Client: NM = FName("NM_Client"); break;
-	case ENetMode::NM_DedicatedServer: NM = FName("NM_DedicatedServer"); break;
+	if (MyRoot) {
+		MyRoot->MoveIgnoreActors.Remove(Actor);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("xyz Detach_Implementation (%s) %s to %s "), *NM.ToString(), *ActorMaybe->GetName(), *GetName())
+	//Actor->SetReplicateMovement(true);
+	//AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
+	//if (Grippable) {
+	//	Grippable->bReplicateMovement = true;
+	//	//Grippable->bStaticMeshReplicateMovement = true;
+	//}
+	//OtherRoot->SetSimulatePhysics(true);
+	//OtherRoot->SetEnableGravity(true);
 
+	UE_LOG(LogTemp, Warning, TEXT("xyz Detach_Implementation (%s) %s to %s "), *UDebug::GetNetModeName(GetNetMode()), *ActorMaybe->GetName(), *GetName())
+
+}
+
+void AGunBase::OnRep_AttachmentReplication()
+{
+	Super::OnRep_AttachmentReplication();
 }

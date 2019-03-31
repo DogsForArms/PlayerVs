@@ -513,7 +513,7 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 			true, //Transform is relative
 			FName("None"),
 			BoneName,
-			EGripCollisionType::InteractiveCollisionWithPhysics,
+			EGripCollisionType::AttachmentGrip, //InteractiveCollisionWithPhysics
 			EGripLateUpdateSettings::NotWhenCollidingOrDoubleGripping,
 			EGripMovementReplicationSettings::ForceClientSideMovement,
 			1500.f, //Stiffness

@@ -63,7 +63,7 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 
 	UGripMotionControllerComponent* LastMotionController = Cast<UGripMotionControllerComponent>(Last);
 
-	if (LastMotionController && Current)
+	if (LastMotionController && Current && (GetNetMode() == ENetMode::NM_Client || GetNetMode() == ENetMode::NM_DedicatedServer))
 	{
 		USceneComponent* Primitive = NULL;
 
@@ -79,8 +79,8 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 		if (Primitive) {
 			FTransform transform = FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector);
 			LastMotionController->DropAndSocketObject(FTransform_NetQuantize(transform), this, 0, Primitive, NAME_None, true);
+			//LastMotionController->DropActor(this, true);
 		}
-		LastMotionController = NULL;
 	}
 
 	if (LastManager)
@@ -92,4 +92,10 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 	{
 		CurrentManager->Execute_Attach(CurrentManager.GetObject(), this);
 	}
+
+}
+
+void APVGrippableStaticMeshActor::SetOwner(AActor* NewOwner)
+{
+	Super::SetOwner(NewOwner);
 }

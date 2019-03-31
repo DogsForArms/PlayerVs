@@ -38,6 +38,8 @@ public:
 	//UFUNCTION()
 	//void OnRep_AttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& LastManager);
 
+	void SetOwner(AActor* NewOwner) override;
+
 private:
 	TWeakObjectPtr<UGripMotionControllerComponent> MotionController;
 
