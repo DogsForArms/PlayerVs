@@ -3,6 +3,7 @@
 #include "PVGrippableStaticMeshActor.h"
 #include "Net/UnrealNetwork.h"
 #include "VR/AttachmentManagerInterface.h"
+#include "Debug.h"
 
 void APVGrippableStaticMeshActor::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
 {
@@ -13,18 +14,27 @@ void APVGrippableStaticMeshActor::GetLifetimeReplicatedProps(TArray< FLifetimePr
 
 void APVGrippableStaticMeshActor::OnGrip_Implementation(UGripMotionControllerComponent* GrippingController, const FBPActorGripInformation& GripInformation)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Ethan OnGrip_Implementation %s"), *GetName())
+	UE_LOG(LogTemp, Warning, TEXT("Ethan OnGrip_Implementation %s"), *GetName());
 	Super::OnGrip_Implementation(GrippingController, GripInformation);
-	MotionController = GrippingController;
+	//MotionController = GrippingController;
+
+	if (HasAuthority())
+	{
+		SetAttachmentManager_Implementation(GrippingController);
+	}
 }
 
 void APVGrippableStaticMeshActor::OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketed)
 {
 	Super::OnGripRelease_Implementation(ReleasingController, GripInformation, bWasSocketed);
-	MotionController = NULL;
-	UE_LOG(LogTemp, Warning, TEXT("xyz OnGripRelease_Implementation %s"), *GetName())
+	//MotionController = NULL;
+	UE_LOG(LogTemp, Warning, TEXT("xyz OnGripRelease_Implementation %s"), *GetName());
+	
+	if (HasAuthority())
+	{
+		SetAttachmentManager_Implementation(NULL);
+	}
 }
-
 
 bool APVGrippableStaticMeshActor::IsGripped()
 {
@@ -34,15 +44,11 @@ bool APVGrippableStaticMeshActor::IsGripped()
 //////////////////////////////////////////////////////////////////////////
 // AttachmentInterface Management
 
-void APVGrippableStaticMeshActor::SetAttachmentManager_Implementation(const TScriptInterface<IAttachmentManagerInterface>& Manager)
+void APVGrippableStaticMeshActor::SetAttachmentManager_Implementation(UObject* Manager)
 {
 	UObject* Last = AttachmentManagerObject;
-	AttachmentChanged(Last, Manager.GetObject());
-	AttachmentManagerObject = Manager.GetObject();
-	// OnRep_AttachmentManagerObject(Last);
-	//TScriptInterface< IAttachmentManagerInterface> LastManager = AttachmentManager;
-	//AttachmentManager = Manager;
-	//OnRep_AttachmentManager(LastManager);
+	AttachmentChanged(Last, Manager);
+	AttachmentManagerObject = Manager;
 }
 
 void APVGrippableStaticMeshActor::OnRep_AttachmentManagerObject(UObject* Last)
@@ -55,7 +61,9 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 	TScriptInterface<IAttachmentManagerInterface> LastManager = Last;
 	TScriptInterface<IAttachmentManagerInterface> CurrentManager = Current;
 
-	if (IsGripped() && Current)
+	UGripMotionControllerComponent* LastMotionController = Cast<UGripMotionControllerComponent>(Last);
+
+	if (LastMotionController && Current)
 	{
 		USceneComponent* Primitive = NULL;
 
@@ -70,9 +78,9 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 
 		if (Primitive) {
 			FTransform transform = FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector);
-			MotionController->DropAndSocketObject(FTransform_NetQuantize(transform), this, 0, Primitive, NAME_None, true);
+			LastMotionController->DropAndSocketObject(FTransform_NetQuantize(transform), this, 0, Primitive, NAME_None, true);
 		}
-		MotionController = NULL;
+		LastMotionController = NULL;
 	}
 
 	if (LastManager)
@@ -85,23 +93,3 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 		CurrentManager->Execute_Attach(CurrentManager.GetObject(), this);
 	}
 }
-
-//void APVGrippableStaticMeshActor::OnRep_AttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& LastAttachmentManager)
-//{
-//	if (IsGripped())
-//	{
-//		Drop();
-//	}
-//
-//	if (LastAttachmentManager)
-//	{
-//		LastAttachmentManager->Execute_Detach(LastAttachmentManager.GetObject(), this);
-//		UE_LOG(LogTemp, Warning, TEXT("xyz OnRep_AttachmentManager Last.Detatch"))
-//	}
-//
-//	if (AttachmentManager)
-//	{
-//		AttachmentManager->Execute_Attach(AttachmentManager.GetObject(), this);
-//		UE_LOG(LogTemp, Warning, TEXT("xyz OnRep_AttachmentManager Current.Attach"))
-//	}
-//}

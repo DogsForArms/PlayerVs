@@ -24,8 +24,8 @@ public:
 // AttachmentInterface Management
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
-	void SetAttachmentManager(const TScriptInterface<IAttachmentManagerInterface>& Manager);
-	virtual void SetAttachmentManager_Implementation(const TScriptInterface<IAttachmentManagerInterface>& Manager) override;
+	void SetAttachmentManager(UObject* Manager);
+	virtual void SetAttachmentManager_Implementation(UObject* Manager) override;
 
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_AttachmentManagerObject)
 	UObject* AttachmentManagerObject;

@@ -28,7 +28,7 @@ public:
 		Ask current attachment manager to attach
 	*/
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Attachment")
-	void SetAttachmentManager(const TScriptInterface< IAttachmentManagerInterface>& Manager);
+	void SetAttachmentManager(UObject* Manager);
 
 
 };

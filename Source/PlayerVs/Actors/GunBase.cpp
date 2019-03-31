@@ -223,6 +223,7 @@ void AGunBase::Attach_Implementation(UObject* ActorMaybe)
 		MyRoot->MoveIgnoreActors.Add(Actor);
 	}
 
+//	Actor->SetReplicates(false);
 	Actor->SetReplicateMovement(false);
 	AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
 	if (Grippable) {
@@ -238,9 +239,6 @@ void AGunBase::Attach_Implementation(UObject* ActorMaybe)
 			EAttachmentRule::KeepWorld,
 			true)
 	);
-	//Actor->SetActorRelativeLocation(FVector::ZeroVector);
-	//Actor->SetActorRelativeRotation(FRotator::ZeroRotator);
-	//const FTransform& NewRelativeTransform, bool bSweep, FHitResult* OutSweepHitResult, ETeleportType Teleport
 	Actor->SetActorRelativeTransform(FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector), false, 0, ETeleportType::TeleportPhysics);
 
 	FName NM = FName("none");
@@ -265,8 +263,12 @@ void AGunBase::DebugMagTimerHandle()
 	case ENetMode::NM_Client: NM = FName("NM_Client"); break;
 	case ENetMode::NM_DedicatedServer: NM = FName("NM_DedicatedServer"); break;
 	}
-	FVector Delta = LoadedMagazine->GetActorLocation() - GetActorLocation();
-	UE_LOG(LogTemp, Warning, TEXT("xyz DebugMagTimerHandle[%s] %s - %s = %s"), *NM.ToString(), *LoadedMagazine->GetName(), *GetName(), *(Delta).ToString())
+	FVector Delta = (LoadedMagazine ? LoadedMagazine->GetActorLocation() : GetActorLocation()) - GetActorLocation();
+	UE_LOG(LogTemp, Warning, TEXT("xyz DebugMagTimerHandle[%s] %s - %s = %s"), 
+		*NM.ToString(), 
+		LoadedMagazine ? *LoadedMagazine->GetName() : TEXT("NULL"), 
+		*GetName(), 
+		*(Delta).ToString())
 	GetWorld()->GetTimerManager().ClearTimer(DebugMagTimer);
 }
 
