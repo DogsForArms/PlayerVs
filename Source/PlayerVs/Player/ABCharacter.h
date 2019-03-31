@@ -155,6 +155,8 @@ public:
 	void UseRight();
 	void StopUseRight();
 
+	void ReloadFPS();
+
 	void ClientUse(UGripMotionControllerComponent* Hand, bool bPressed);
 
 	void MoveRH(float Value);

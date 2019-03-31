@@ -266,6 +266,8 @@ void AABCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 
 	PlayerInputComponent->BindAction("UseRight", IE_Pressed, this, &AABCharacter::UseRight);
 	PlayerInputComponent->BindAction("UseRight", IE_Released, this, &AABCharacter::StopUseRight);
+
+	PlayerInputComponent->BindAction("ReloadFPS", IE_Pressed, this, &AABCharacter::ReloadFPS);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -296,7 +298,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	FVector End = GrabArea->GetForwardVector() * GripTraceLength + Start;
 	//DrawDebugSphere(GetWorld(), End, Radius, 8, FColor::Blue, false, 3, 0, 1.0);
 	bool ObjectFound = GetWorld()->SweepMultiByObjectType(OutHits, Start, End, FQuat(), TraceChannel, FCollisionShape::MakeSphere(Radius), TraceParams);
-	UE_LOG(LogTemp, Warning, TEXT("SweepMultiByObjectType %d"), ObjectFound)
+	//UE_LOG(LogTemp, Warning, TEXT("SweepMultiByObjectType %d"), ObjectFound)
 
 	for (FHitResult Hit : OutHits)
 	{
@@ -331,7 +333,7 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	{
 		IVRGripInterface* GrippableComponent = Cast<IVRGripInterface>(Result.Component);
 		IVRGripInterface* GrippableActor = Cast<IVRGripInterface>(Result.Actor);
-		UE_LOG(LogTemp, Warning, TEXT("GripResultScan Actor %s"), (Result.Actor ? *Result.Actor->GetName() : *FString("NULL")))
+		//UE_LOG(LogTemp, Warning, TEXT("GripResultScan Actor %s"), (Result.Actor ? *Result.Actor->GetName() : *FString("NULL")))
 
 		if (GrippableComponent)
 		{
@@ -347,9 +349,9 @@ bool AABCharacter::GetGrabScanResults(TArray<FGrabScanResult> &OutResults, USphe
 	}
 
 	// Grab Order between Actors
-	OutResults.Sort([](const FGrabScanResult & A, const FGrabScanResult & B) {
-		return A.Actor&& A.Actor->IsA(AMagazine::StaticClass());
-	});
+	//OutResults.Sort([](const FGrabScanResult & A, const FGrabScanResult & B) {
+	//	return A.Actor&& A.Actor->IsA(AMagazine::StaticClass());
+	//});
 
 	// TODO remove duplicates?
 
@@ -386,7 +388,7 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 			{
 				IVRGripInterface* Grippable = Cast<IVRGripInterface>(ScanResult.ObjectToGrip);
 
-				UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Found object to grab..."));
+				//UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Found object to grab..."));
 
 				if (Grippable && !Grippable->Execute_DenyGripping(ScanResult.ObjectToGrip))
 				{
@@ -418,7 +420,7 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 					}
 					else
 					{
-						UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
+						//UE_LOG(LogTemp, Warning, TEXT("HAD GRIP SLOT IN RANGE!"));
 					}
 					CallCorrectGrabEvent(HandType, ScanResult.ObjectToGrip, GripTransform, ScanResult.BoneName, false);
 					break;
@@ -426,7 +428,7 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 				else if (ScanResult.Component->IsSimulatingPhysics(ScanResult.BoneName))
 				{
 					//GripDropOrUseObjectClean >> "PlainOrBoneTransform"
-					UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
+					//UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | <Component> isSimulatingPhysics"));
 					FTransform Transform = GetHandRelativeTransformOfBoneOrObject(Hand, ScanResult.ObjectToGrip, ScanResult.ObjectTransform, ScanResult.BoneName);
 					CallCorrectGrabEvent(HandType, ScanResult.ObjectToGrip, Transform, ScanResult.BoneName, false);
 					break;
@@ -439,7 +441,7 @@ void AABCharacter::GripDropOrUseObject(UGripMotionControllerComponent* Hand, USp
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Nothing to Grip"));
+			//UE_LOG(LogTemp, Warning, TEXT("GripDropOrUseObject | Denied: Nothing to Grip"));
 		}
 	}
 }
@@ -494,8 +496,6 @@ void AABCharacter::TryGrab(EControllerHand EHand, UObject* ObjectToGrip, FTransf
 		OtherHand->DropObject(ObjectToGrip, true);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("TestHolster grip %s"), *ObjectToGrip->GetName())
-
 	bool bGripOccured = Hand->GripObjectByInterface(
 		ObjectToGrip,
 		Transform,
@@ -547,7 +547,6 @@ void AABCharacter::CallCorrectDropEvent(UGripMotionControllerComponent* Hand)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Server Drop All:: TODO untested"));
 		ServerDropAll(EHand);
 	}
 }
@@ -561,7 +560,6 @@ void AABCharacter::DropAll(EControllerHand EHand)
 	for (AActor *GrippedActor : GrippedActors)
 	{ 
 		bool bInventory = HandIsInHolster(Hand);//CanPutInInventory(GrippedActor);
-		UE_LOG(LogTemp, Warning, TEXT("PutInInventory %d %s"), bInventory, *GrippedActor->GetName())
 
 		Hand->DropObject(GrippedActor, 0, true);
 		if (bInventory)
@@ -593,10 +591,10 @@ bool AABCharacter::CanPutInInventory(AActor* Actor)
 {
 	TSet<AActor*> Overlaps;
 	HolsterArea->GetOverlappingActors(Overlaps, AGunBase::StaticClass());
-	UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %d"), Overlaps.Num())
+	//UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %d"), Overlaps.Num())
 	for (AActor* Overlap : Overlaps)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %s"), *Overlap->GetName())
+		//UE_LOG(LogTemp, Warning, TEXT("TestHolster overlapping %s"), *Overlap->GetName())
 	}
 
 	if (Actor && Overlaps.Contains(Actor))
@@ -638,6 +636,43 @@ void AABCharacter::StopUseLeft()
 void AABCharacter::StopUseRight()
 {
 	ClientUse(RightMotionController, false);
+}
+
+void AABCharacter::ReloadFPS()
+{
+	TArray<UObject*> GrippedObjects;
+	LeftMotionController->GetGrippedObjects(GrippedObjects);
+	AMagazine* Magazine = NULL;
+	AGunBase* Gun = NULL;
+	for (UObject* GrippedObject : GrippedObjects)
+	{
+		if (AMagazine * M = Cast<AMagazine>(GrippedObject))
+		{
+			Magazine = M;
+		}
+		if (AGunBase * G = Cast<AGunBase>(GrippedObject))
+		{
+			Gun = G;
+		}
+	}
+	RightMotionController->GetGrippedObjects(GrippedObjects);
+	for (UObject* GrippedObject : GrippedObjects)
+	{
+		if (AMagazine * M = Cast<AMagazine>(GrippedObject))
+		{
+			Magazine = M;
+		}
+		if (AGunBase * G = Cast<AGunBase>(GrippedObject))
+		{
+			Gun = G;
+		}
+	}
+
+	if (Magazine && Gun)
+	{
+		Gun->TryLoadMag(Magazine);
+	}
+
 }
 
 void AABCharacter::ClientUse(UGripMotionControllerComponent* Hand, bool bPressed)

@@ -51,18 +51,20 @@ public:
 		return FString("Unknown");
 	}
 
-	static FORCEINLINE FString ActorDebugName(AActor* Actor)
+	static FORCEINLINE FString ActorDebugNet(AActor* Actor)
 	{
 		if (Actor) {
 			FString name = Actor->GetName();
 			FString NetMode = GetNetModeName(Actor->GetNetMode());
 			FString LocalNetRole = GetNetRoleName(Actor->GetLocalRole());
 			FString RemoteNetRole = GetNetRoleName(Actor->GetRemoteRole());
+			FString HasAuthority = Actor->HasAuthority() ? FString("yes") : FString("no");
+			FString OwnerName = NameOrNull(Actor->GetOwner());
 
-			return FString::Printf(TEXT("ActorDebug (%s) NetMode: %s, LocalRole: %s, RemoteRole: %s "), *name, *NetMode, *LocalNetRole, *RemoteNetRole);
+			return FString::Printf(TEXT("[(%s)\M: %s\tLR: %s\tRR: %s\tAuth: %s\tOwner: %s]"), *name, *NetMode, *LocalNetRole, *RemoteNetRole, *HasAuthority, *OwnerName);
 		}
 
-		return FString("ActorDebug (NULL)");
+		return FString("[NULL]");
 	}
 
 	static FORCEINLINE FString ActorNetRole(AActor* Actor)
@@ -72,10 +74,11 @@ public:
 			FString LocalNetRole = GetNetRoleName(Actor->GetLocalRole());
 			FString RemoteNetRole = GetNetRoleName(Actor->GetRemoteRole());
 			FString HasAuthority = Actor->HasAuthority() ? FString("yes") : FString("no");
+			FString OwnerName = NameOrNull(Actor->GetOwner());
 
-			return FString::Printf(TEXT("ActorDebug (%s) LocalRole: %s, RemoteRole: %s, HasAuthority: %s"), *name, *LocalNetRole, *RemoteNetRole, *HasAuthority);
+			return FString::Printf(TEXT("[(%s)\tLR\t%s\tRR: %s\tAuth: %s\tOwner: %s]"), *name, *LocalNetRole, *RemoteNetRole, *HasAuthority, *OwnerName);
 		}
 
-		return FString("ActorDebug (NULL)");
+		return FString("[NULL]");
 	}
 };

@@ -55,6 +55,9 @@ public:
 	UFUNCTION()
 	void OnBeginOverlapMagazine(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void TryLoadMag(AActor* MaybeMag);
+
 
 //////////////////////////////////////////////////////////////////////////
 // Calculates Is Aiming & Movement Modifications
