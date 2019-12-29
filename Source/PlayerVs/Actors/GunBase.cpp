@@ -23,6 +23,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
 
 	Muzzle = CreateDefaultSubobject<UArrowComponent>("Arrow");
 	Muzzle->SetRelativeScale3D(FVector(0.2, 0.2, 0.2));
@@ -52,7 +53,7 @@ AGunBase::AGunBase(const FObjectInitializer& ObjectInitializer)
 	///////////////////
 	// AttachmentPoint Setup
 	AttachmentPoint = CreateDefaultSubobject<USphereComponent>("AttachmentPoint");
-	AttachmentPoint->InitSphereRadius(2.5f); //1
+	AttachmentPoint->InitSphereRadius(4.5f); //1
 	AttachmentPoint->AlwaysLoadOnClient = false;
 	AttachmentPoint->AlwaysLoadOnServer = true;
 
@@ -86,18 +87,47 @@ void AGunBase::OnBeginOverlapMagazine(
 	TryLoadMag(OtherActor);
 }
 
-void AGunBase::TryLoadMag(AActor* MaybeMag)
+void AGunBase::TickGrip_Implementation(UGripMotionControllerComponent* GrippingController, const FBPActorGripInformation& GripInformation, float DeltaTime)
 {
-	AMagazine* Magazine = Cast<AMagazine>(MaybeMag);
-	TScriptInterface<IAttachmentInterface> MagAttachment = Magazine;
-	if ((!Magazine || Magazine->GetAttachmentType() != EMagazineType::Pistol) ||
-		(Role != ROLE_Authority) ||
-		(LoadedMagazine)) //temporary, only allow loaded magazine
-		return;
-	UE_LOG(LogTemp, Warning, TEXT("+++++++++++++++++++++++++++++++++++++++++++++ %s <-> %s"), *UDebug::NameOrNull(Magazine), *UDebug::NameOrNull(this));
-	UE_LOG(LogTemp, Warning, TEXT("TryLoadMag Pre SetAttachmentManager Mag %s"), *UDebug::ActorDebugNet(Magazine));
-	MagAttachment->Execute_SetAttachmentManager(MagAttachment.GetObject(), this);
-	UE_LOG(LogTemp, Warning, TEXT("TryLoadMag Post SetAttachmentManager Mag %s"), *UDebug::ActorDebugNet(Magazine));
+	Super::TickGrip_Implementation(GrippingController, GripInformation, DeltaTime);
+	if (LoadedMagazine)
+	{
+		LoadedMagazine->Tick(DeltaTime);
+		FVector V1 = this->GetActorLocation();
+		FVector V2 = LoadedMagazine->GetActorLocation();
+
+		UE_LOG(LogTemp, Warning, TEXT("TickGrip_Implementation diff: %s - %s = %s"), *V1.ToString(), *V2.ToString(), *(V1 - V2).ToString());
+	}
+
+	if (LoadedMagazine && LoadedMagazineNeedsAttachment)
+	{
+		LoadedMagazineNeedsAttachment = false;
+		AttachMag();
+	}
+}
+
+void AGunBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (LoadedMagazine)
+	{
+		LoadedMagazine->Tick(DeltaTime);
+		FVector V1 = this->GetActorLocation();
+		FVector V2 = LoadedMagazine->GetActorLocation();
+
+		UE_LOG(LogTemp, Warning, TEXT("Tick diff: %s - %s = %s"), *V1.ToString(), *V2.ToString(), *(V1 - V2).ToString());
+
+		//LoadedMagazine->SetActorLocation(this->GetActorLocation());
+		//LoadedMagazine->SetActorRotation(this->GetActorRotation());
+
+		//LoadedMagazine->SetActorRelativeTransform(FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector), false, 0, ETeleportType::ResetPhysics);
+	}
+
+	if (LoadedMagazine && LoadedMagazineNeedsAttachment)
+	{
+		LoadedMagazineNeedsAttachment = false;
+		AttachMag();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -196,6 +226,31 @@ float AGunBase::CalculateMovementModifier() const
 //////////////////////////////////////////////////////////////////////////
 // Attachment Manager Interface
 
+void AGunBase::TryLoadMag(AActor* MaybeMag)
+{
+	AMagazine* Magazine = Cast<AMagazine>(MaybeMag);
+	TScriptInterface<IAttachmentInterface> MagAttachment = Magazine;
+	if ((!Magazine || Magazine->GetAttachmentType() != EMagazineType::Pistol) ||
+		(Role != ROLE_Authority) ||
+		(LoadedMagazine)) //temporary, only allow loaded magazine
+		return;
+	UE_LOG(LogTemp, Warning, TEXT("\n\n+++++++++++++++++++++++++++++++++++++++++++++ %s <-> %s"), *UDebug::NameOrNull(Magazine), *UDebug::NameOrNull(this));
+	UE_LOG(LogTemp, Warning, TEXT("TryLoadMag Pre SetAttachmentManager Mag %s"), *UDebug::ActorDebugNet(Magazine));
+	LoadedMagazine = Magazine;
+	LoadedMagazine->AddTickPrerequisiteActor(this);
+
+	LoadedMagazineNeedsAttachment = true;
+//	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AGunBase::AttachMag);
+
+	//MagAttachment->Execute_SetAttachmentManager(MagAttachment.GetObject(), this);
+	UE_LOG(LogTemp, Warning, TEXT("TryLoadMag Post SetAttachmentManager Mag %s"), *UDebug::ActorDebugNet(Magazine));
+}
+
+void AGunBase::AttachMag()
+{
+	LoadedMagazine->SetAttachmentManager_Implementation(this);
+}
+
 void AGunBase::DeferredAttachmentHandle()
 {
 	AActor* Actor = Cast<AActor>(DeferredAttachmentObject);
@@ -208,6 +263,11 @@ void AGunBase::DeferredAttachmentHandle()
 		MyRoot->MoveIgnoreActors.Add(Actor);
 	}
 
+	if (OtherRoot) {
+		OtherRoot->MoveIgnoreActors.Add(this);
+	}
+
+
 	//Actor->SetReplicates(false);
 	//Actor->SetReplicateMovement(false);
 	//AGrippableStaticMeshActor* Grippable = Cast<AGrippableStaticMeshActor>(Actor);
@@ -217,13 +277,17 @@ void AGunBase::DeferredAttachmentHandle()
 	//}
 	//Actor->TearOff();
 
-	OtherRoot->AttachToComponent(MyRoot,
-		FAttachmentTransformRules(
-			EAttachmentRule::SnapToTarget,
-			EAttachmentRule::SnapToTarget,
-			EAttachmentRule::KeepWorld,
-			true)
-	);
+	//OtherRoot->AttachToComponent(MyRoot,
+	//	FAttachmentTransformRules(
+	//		EAttachmentRule::SnapToTarget,
+	//		EAttachmentRule::SnapToTarget,
+	//		EAttachmentRule::KeepWorld,
+	//		true)
+	//);
+	OtherRoot->SetCollisionResponseToAllChannels(ECR_Ignore);
+	OtherRoot->SetSimulatePhysics(false);
+	//OtherRoot->AttachToComponent(MyRoot, FAttachmentTransformRules::KeepWorldTransform);
+	OtherRoot->AttachToComponent(MyRoot, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, true));
 	//Actor->SetActorRelativeTransform(FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector), false, 0, ETeleportType::ResetPhysics);
 
 	if (AMagazine * Mag = Cast<AMagazine>(Actor))
@@ -231,9 +295,9 @@ void AGunBase::DeferredAttachmentHandle()
 		LoadedMagazine = Mag;
 	}
 
-	DebugMagTimerIterations = 3;
-	DebugMagTimerHandle();
-	GetWorld()->GetTimerManager().SetTimer(DebugMagTimer, this, &AGunBase::DebugMagTimerHandle, 0.01f, true);
+	//DebugMagTimerIterations = 3;
+	//DebugMagTimerHandle();
+	//GetWorld()->GetTimerManager().SetTimer(DebugMagTimer, this, &AGunBase::DebugMagTimerHandle, 0.01f, true);
 }
 
 void AGunBase::Attach_Implementation(UObject* ActorMaybe)
@@ -246,24 +310,25 @@ void AGunBase::Attach_Implementation(UObject* ActorMaybe)
 void AGunBase::DebugMagTimerHandle()
 {
 	UE_LOG(LogTemp, Warning, TEXT("========== %s"), *UDebug::GetNetModeName(GetNetMode()));
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), *UDebug::ActorNetRole(this));
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), *UDebug::ActorNetRole(LoadedMagazine));
 
-	UE_LOG(LogTemp, Warning, TEXT("gun %s"), *UDebug::ActorNetRole(this));
-	UE_LOG(LogTemp, Warning, TEXT("gun owner %s"), *UDebug::ActorNetRole(this->GetOwner()));
+	//UE_LOG(LogTemp, Warning, TEXT("gun %s"), *UDebug::ActorNetRole(this));
+	//UE_LOG(LogTemp, Warning, TEXT("gun owner %s"), *UDebug::ActorNetRole(this->GetOwner()));
 
-	UE_LOG(LogTemp, Warning, TEXT("mag %s"), *UDebug::ActorNetRole(LoadedMagazine));
-	UE_LOG(LogTemp, Warning, TEXT("mag owner %s"), *UDebug::ActorNetRole(LoadedMagazine->GetOwner()));
+	//UE_LOG(LogTemp, Warning, TEXT("mag %s"), *UDebug::ActorNetRole(LoadedMagazine));
+	//UE_LOG(LogTemp, Warning, TEXT("mag owner %s"), *UDebug::ActorNetRole(LoadedMagazine->GetOwner()));
 
-	//UPrimitiveComponent* PrimitiveMag = Cast<UPrimitiveComponent>(LoadedMagazine ? LoadedMagazine->GetRootComponent() : NULL);
+	UPrimitiveComponent* PrimitiveMag = Cast<UPrimitiveComponent>(LoadedMagazine ? LoadedMagazine->GetRootComponent() : NULL);
 	//FString MagIsSimulating = PrimitiveMag ? UDebug::BoolToString(PrimitiveMag->IsSimulatingPhysics()) : FString("NULL");
 	//UE_LOG(LogTemp, Warning, TEXT("%s simulatephysics %s"), *UDebug::NameOrNull(LoadedMagazine), *MagIsSimulating)
 
 	//UE_LOG(LogTemp, Warning, TEXT("%s net owner is "), *UDebug::NameOrNull(this), *UDebug::NameOrNull(this->GetNetOwner()));
 	//UE_LOG(LogTemp, Warning, TEXT("%s net owner is %s"), *UDebug::NameOrNull(LoadedMagazine), *UDebug::NameOrNull(LoadedMagazine->GetNetOwner()));
-	//FVector Delta = (LoadedMagazine ? LoadedMagazine->GetActorLocation() : GetActorLocation()) - GetActorLocation();
-	//UE_LOG(LogTemp, Warning, TEXT("Vector Offset %s"), *Delta.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("=========="));
+	//FVector DeltaActor = LoadedMagazine->GetActorLocation() - GetActorLocation();
+	//UE_LOG(LogTemp, Warning, TEXT("Actor Offset %s"), *DeltaActor.ToString());
+
+	//FVector DeltaCOmp = PrimitiveMag->GetComponentLocation() - GetActorLocation();
+	//UE_LOG(LogTemp, Warning, TEXT("ComponentOffset Offset %s"), *DeltaCOmp.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("=========="));
 
 	DebugMagTimerIterations--;
 	if (DebugMagTimerIterations <= 0) {
@@ -291,6 +356,9 @@ void AGunBase::Detach_Implementation(UObject* ActorMaybe)
 
 	if (MyRoot) {
 		MyRoot->MoveIgnoreActors.Remove(Actor);
+	}
+	if (OtherRoot) {
+		OtherRoot->MoveIgnoreActors.Remove(this);
 	}
 
 	//Actor->SetReplicateMovement(true);

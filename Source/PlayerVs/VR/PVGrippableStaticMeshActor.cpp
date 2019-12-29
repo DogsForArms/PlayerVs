@@ -24,12 +24,14 @@ void APVGrippableStaticMeshActor::OnGrip_Implementation(UGripMotionControllerCom
 	}
 }
 
-void APVGrippableStaticMeshActor::OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketed)
+void APVGrippableStaticMeshActor::OnGripRelease_Implementation(UGripMotionControllerComponent* ReleasingController, const FBPActorGripInformation& GripInformation, bool bWasSocketedValue)
 {
-	Super::OnGripRelease_Implementation(ReleasingController, GripInformation, bWasSocketed);
+	Super::OnGripRelease_Implementation(ReleasingController, GripInformation, bWasSocketedValue);
 	//MotionController = NULL;
-	UE_LOG(LogTemp, Warning, TEXT("APVGrippableStaticMeshActor OnGripRelease_Implementation %s"), *UDebug::ActorDebugNet(this));
-	
+	UE_LOG(LogTemp, Warning, TEXT("APVGrippableStaticMeshActor OnGripRelease_Implementation %s wasSocketed %s"), *UDebug::ActorDebugNet(this), *UDebug::BoolToString(bWasSocketedValue));
+	//bWasSocketed = bWasSocketedValue;
+	SetActorTickEnabled(true);
+
 	//if (HasAuthority())
 	//{
 	//	SetAttachmentManager_Implementation(NULL);
@@ -58,7 +60,7 @@ void APVGrippableStaticMeshActor::OnRep_AttachmentManagerObject(UObject* Last)
 
 void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Current)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Begin AttachmentChanged %s"), *UDebug::ActorDebugNet(this));
+	UE_LOG(LogTemp, Warning, TEXT("%s %s Begin AttachmentChanged last: %s, current: %s"), *UDebug::NameOrNull(this), *UDebug::GetNetModeName(this->GetNetMode()), *UDebug::NameOrNull(Last), *UDebug::NameOrNull(Current));
 
 	TScriptInterface<IAttachmentManagerInterface> LastManager = Last;
 	TScriptInterface<IAttachmentManagerInterface> CurrentManager = Current;
@@ -81,7 +83,6 @@ void APVGrippableStaticMeshActor::AttachmentChanged(UObject* Last, UObject* Curr
 		if (Primitive) {
 			FTransform transform = FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector);
 			LastMotionController->DropAndSocketObject(FTransform_NetQuantize(transform), this, 0, Primitive, NAME_None, true);
-			this->CopyRemoteRoleFrom(this->GetOwner());
 
 			UE_LOG(LogTemp, Warning, TEXT("AttachmentChanged setting remote role from owner"));
 			//LastMotionController->DropActor(this, true);

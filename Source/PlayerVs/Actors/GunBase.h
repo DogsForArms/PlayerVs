@@ -37,6 +37,14 @@ public:
 	virtual void ServerFireGun_Implementation(FVector Origin, FVector_NetQuantizeNormal ShootDir);
 	virtual bool ServerFireGun_Validate(FVector Origin, FVector_NetQuantizeNormal ShootDir);
 
+	virtual void Tick(float DeltaTime) override;
+	virtual void TickGrip_Implementation(UGripMotionControllerComponent* GrippingController, const FBPActorGripInformation& GripInformation, float DeltaTime) override;
+
+	UFUNCTION()
+	void AttachMag();
+
+	bool LoadedMagazineNeedsAttachment = false;
+
 	UPROPERTY(EditAnywhere, Category = "Bullet")
 	TSubclassOf<ABulletBase> BulletTemplate;
 
